@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Axioma IDE</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #15171d;
+  --bg-panel:  #1b1e26;
+  --bg-raised: #21242e;
+  --line:      #2c313d;
+  --ink:       #e7e5df;
+  --ink-dim:   #9196a3;
+  --gold:      #d4a24e;
+  --gold-dim:  #8a7247;
+  --teal:      #5ec8c2;
+  --red:       #e3685f;
+  --radius: 3px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f4ef; --bg-panel: #fdfcf9; --bg-raised: #ffffff;
+    --line: #ddd7c9; --ink: #1d1b16; --ink-dim: #6b6558;
+    --gold: #9a6c1f; --gold-dim: #b68a3d; --teal: #2d7d77; --red: #b8392f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171d; --bg-panel: #1b1e26; --bg-raised: #21242e;
+  --line: #2c313d; --ink: #e7e5df; --ink-dim: #9196a3;
+  --gold: #d4a24e; --gold-dim: #8a7247; --teal: #5ec8c2; --red: #e3685f;
+}
+* { box-sizing: border-box; }
+html, body {
+  height: 100%; margin: 0;
+  background: var(--bg); color: var(--ink);
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.app { display: flex; flex-direction: column; height: 100%; min-height: 100vh; }
+
+header {
+  display: flex; align-items: center; gap: 18px;
+  padding: 14px 22px; border-bottom: 1px solid var(--line);
+  background: var(--bg-panel); flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand .mark { font-family: 'Source Serif 4', serif; font-weight: 600; font-style: italic; font-size: 22px; color: var(--gold); letter-spacing: 0.3px; }
+.brand .tag { font-size: 12px; color: var(--ink-dim); }
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+button, select {
+  font-family: inherit; font-size: 13px; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--bg-raised); color: var(--ink);
+  padding: 7px 13px; cursor: pointer; transition: border-color .15s, color .15s;
+}
+button:hover, select:hover { border-color: var(--gold-dim); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--gold); border-color: var(--gold); color: #1b1408; font-weight: 600; }
+button.primary:hover { background: #e0b263; }
+button.primary:disabled { opacity: 0.5; cursor: default; }
+button.ghost { background: transparent; }
+input[type=file] { display: none; }
+.kbd { font-size: 10px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
+
+main { flex: 1; display: flex; min-height: 0; }
+.pane { flex: 1 1 50%; display: flex; flex-direction: column; min-width: 0; }
+.pane + .pane { border-left: 1px solid var(--line); }
+.pane-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px; font-size: 11px; letter-spacing: .04em; color: var(--ink-dim);
+  border-bottom: 1px solid var(--line); background: var(--bg-panel); flex-shrink: 0;
+}
+.pane-head .status { display:flex; align-items:center; gap:6px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-dim); }
+.dot.ok { background: var(--teal); }
+.dot.err { background: var(--red); }
+.dot.run { background: var(--gold); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+#editor-host { flex: 1; min-height: 0; }
+.CodeMirror { height: 100%; font-family: 'JetBrains Mono', monospace; font-size: 14.5px; line-height: 1.6; background: var(--bg-panel); color: var(--ink); }
+.CodeMirror-gutters { background: var(--bg-panel); border-right: 1px solid var(--line); }
+.CodeMirror-linenumber { color: #4a4f5c; }
+.CodeMirror-cursor { border-left: 2px solid var(--gold); }
+.cm-ax-keyword { color: var(--gold); }
+.cm-ax-struct { color: var(--gold); font-weight: 600; }
+.cm-ax-string { color: var(--teal); }
+.cm-ax-number { color: #c9a8e8; }
+.cm-ax-comment { color: var(--ink-dim); font-style: italic; }
+.cm-ax-op { color: #e7956b; }
+.cm-ax-bool { color: #e7956b; font-weight: 600; }
+
+#console {
+  flex: 1; overflow-y: auto; padding: 14px 18px; font-size: 13.5px; line-height: 1.7;
+  white-space: pre-wrap; word-break: break-word;
+}
+#console .line { padding: 1px 0; }
+#console .err { color: var(--red); }
+#console .err::before { content: "✗ "; }
+#console .hint { color: var(--ink-dim); }
+#console .welcome { color: var(--ink-dim); }
+
+footer {
+  padding: 7px 22px; border-top: 1px solid var(--line); background: var(--bg-panel);
+  font-size: 11px; color: var(--ink-dim); display: flex; justify-content: space-between;
+  padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+}
+footer a { color: var(--ink-dim); }
+
+@media (max-width: 860px) {
+  main { flex-direction: column; }
+  .pane + .pane { border-left: none; border-top: 1px solid var(--line); }
+  .pane { flex-basis: 50%; }
+  .brand .tag { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><span class="mark">Axioma</span><span class="tag">IDE — a mathematical programming language</span></div>
+    <div class="toolbar">
+      <select id="examples"></select>
+      <button id="btn-run" class="primary">▶ Run<span class="kbd">⌘/Ctrl+Enter</span></button>
+      <button id="btn-load" class="ghost">Open .axm</button>
+      <input id="file-input" type="file" accept=".axm">
+      <button id="btn-save" class="ghost">Save .axm</button>
+      <button id="btn-theme" class="ghost" title="Switch theme">☾</button>
+    </div>
+  </header>
+  <main>
+    <section class="pane">
+      <div class="pane-head"><span>EDITOR — program.axm</span><span id="pos">1:1</span></div>
+      <div id="editor-host"></div>
+    </section>
+    <section class="pane">
+      <div class="pane-head">
+        <span>CONSOLE</span>
+        <span class="status"><span id="status-dot" class="dot"></span><span id="status-text">ready</span></span>
+      </div>
+      <div id="console"><div class="line welcome">// Your Axioma program's output will appear here. Press "Run" to get started.</div></div>
+    </section>
+  </main>
+  <footer>
+    <span>Axioma engine — native JavaScript implementation, no external runtime dependencies.</span>
+    <span>File extension: <code>.axm</code></span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.20/addon/mode/simple.min.js"></script>
+<script>
+/* ====================== AXIOMA ENGINE (inlined) ====================== */
+/* ============================================================================
+   Axioma Engine — JavaScript port (lexer + parser + tree-walk interpreter)
+   Mirrors the Python reference implementation (axioma_lexer.py /
+   axioma_parser.py / interpreter.py) closely enough to share semantics,
+   so this IDE runs *the* Axioma language natively in the browser with no
+   external runtime dependency (no WASM/Pyodide fetch required).
+   ============================================================================ */
+(function (global) {
+"use strict";
+
+// ── Errors ──────────────────────────────────────────────────────────────────
+class LexerError extends Error {
+  constructor(msg, line, col) { super(`[Lexer] ${msg} at line ${line}, col ${col}`); this.line = line; this.col = col; }
+}
+
+// ── Keywords ────────────────────────────────────────────────────────────────
+const KEYWORDS = new Set([
+  "let","given","otherwise","each","repeat","until","in","stop","next","skip",
+  "where","fn","report","structure","extends","create","this","parent",
+  "static","property","fixed","immutable","check","catch","resolve","always",
+  "abort","cause","fallback","using","from","provide","as","export","if","main",
+  "spawn","collect","emit","expand","outer","scope","drop","verify",
+  "assume","on_open","on_close","union","intersect","exclude","cart",
+  "deriv","integ","sum","prod","nrt","by","begin","end","case",
+  "out","type","is","inherits","Sequence","Tuple","Mapping","Set","FrozenSet",
+  "ConstantSet","Binary","MutableBinary","ZZ","RR","CC","NN","QQ","II","ii",
+  "Bool","CharSequence","Null","sup","inf","round","sort","reverse",
+  "apply","select","fold","specialize","stream","load","store",
+  "exists","identity","hash","inspect","doc","compute","run","get","set",
+  "base","entity","method","sequence","is_function","stringify","format",
+  "char","code","base2","base8","base16","indexed","combine","LexicalContext",
+  "is_null","contains","forall","plot",
+]);
+const MATH_SETS = new Set(["NN","ZZ","QQ","II","RR","ii","CC"]);
+const BOOL_LITERALS = new Set(["T","F"]);
+const SOURCE_EXTENSION = ".axm";
+
+// ── Lexer ───────────────────────────────────────────────────────────────────
+class Token {
+  constructor(type, value, line, col) { this.type = type; this.value = value; this.line = line; this.col = col; }
+}
+
+const SINGLE_CHAR = {
+  "(": "LPAREN", ")": "RPAREN", "[": "LBRACKET", "]": "RBRACKET",
+  "{": "LBRACE", "}": "RBRACE", ",": "COMMA", ";": "SEMICOLON",
+  "#": "HASH", "'": "PRIME", "@": "AT", "?": "QUESTION",
+  "^": "CARET", "~": "TILDE", "%": "PERCENT", "_": "UNDERSCORE",
+};
+
+class Lexer {
+  constructor(src) { this.src = src; this.pos = 0; this.line = 1; this.col = 1; this.tokens = []; }
+  current() { return this.pos < this.src.length ? this.src[this.pos] : null; }
+  peek(o = 1) { const i = this.pos + o; return i < this.src.length ? this.src[i] : null; }
+  advance() {
+    const ch = this.src[this.pos]; this.pos++;
+    if (ch === "\n") { this.line++; this.col = 1; } else { this.col++; }
+    return ch;
+  }
+  match(expected) { if (this.current() === expected) { this.advance(); return true; } return false; }
+  add(type, value, line, col) { this.tokens.push(new Token(type, value, line, col)); }
+  here() { return [this.line, this.col]; }
+
+  tokenize() {
+    while (this.current() !== null) this._scan();
+    this.add("EOF", null, this.line, this.col);
+    return this.tokens;
+  }
+
+  _readWhile(cond) { let r = ""; while (this.current() !== null && cond(this.current())) r += this.advance(); return r; }
+  _readUntilNewline() { return this._readWhile(c => c !== "\n"); }
+
+  _readString(interp) {
+    let r = "";
+    for (;;) {
+      const ch = this.current();
+      if (ch === null) throw new LexerError("Unterminated string", this.line, this.col);
+      if (ch === '"') { this.advance(); break; }
+      if (ch === "\\") {
+        this.advance(); const esc = this.advance();
+        r += ({ n: "\n", t: "\t", "\\": "\\", '"': '"' })[esc] ?? esc;
+      } else { r += this.advance(); }
+    }
+    return interp ? { interp: true, raw: r } : r;
+  }
+
+  _readNumber(first) {
+    let digits = first + this._readWhile(c => /[0-9_]/.test(c));
+    digits = digits.replace(/_/g, "");
+    if (this.current() === "." && this.peek() !== ".") {
+      this.advance();
+      const frac = this._readWhile(c => /[0-9]/.test(c));
+      return ["REAL", parseFloat(`${digits}.${frac || "0"}`)];
+    }
+    return ["INTEGER", parseInt(digits, 10)];
+  }
+
+  _emitIdentOrKeyword(word, line, col) {
+    if (word === "Null") this.add("NULL", null, line, col);
+    else if (BOOL_LITERALS.has(word)) this.add("BOOL", word === "T", line, col);
+    else if (MATH_SETS.has(word)) this.add("MATHSET", word, line, col);
+    else if (KEYWORDS.has(word)) this.add("KEYWORD", word, line, col);
+    else this.add("IDENT", word, line, col);
+  }
+
+  _scan() {
+    const [line, col] = this.here();
+    const ch = this.advance();
+
+    if (ch === " " || ch === "\t" || ch === "\r") return;
+    if (ch === "\n") {
+      if (!this.tokens.length || this.tokens[this.tokens.length - 1].type !== "NEWLINE") this.add("NEWLINE", "\n", line, col);
+      return;
+    }
+    if (ch === "-") {
+      if (this.current() === "-") { this.advance(); this._readUntilNewline(); return; } // comment
+      if (this.match(">")) { this.add("ARROW", "->", line, col); return; }
+      if (this.match("=")) { this.add("MINUSEQ", "-=", line, col); return; }
+      this.add("MINUS", "-", line, col); return;
+    }
+    if (ch === '"') { this.add("STRING", this._readString(false), line, col); return; }
+    if (ch === "s" && this.current() === '"') { this.advance(); this.add("STRING", this._readString(true), line, col); return; }
+    if (/[0-9]/.test(ch)) { const [t, v] = this._readNumber(ch); this.add(t, v, line, col); return; }
+    if (/[A-Za-z_]/.test(ch)) {
+      const ident = ch + this._readWhile(c => /[A-Za-z0-9_]/.test(c));
+      this._emitIdentOrKeyword(ident, line, col); return;
+    }
+    if (ch === "\u27e8") { this.add("LANGLE", ch, line, col); return; }
+    if (ch === "\u27e9") { this.add("RANGLE", ch, line, col); return; }
+
+    if (ch === ":") {
+      if (this.match(":")) this.add("DOMAIN", "::", line, col);
+      else if (this.match("=")) this.add("ASSIGN", ":=", line, col);
+      else this.add("COLON", ":", line, col);
+      return;
+    }
+    if (ch === "=") {
+      if (this.current() === "=" && this.peek(1) === "=") { this.advance(); this.advance(); this.add("EQ", "===", line, col); }
+      else if (this.current() === "!" && this.peek(1) === "=") { this.advance(); this.advance(); this.add("NEQ", "=!=", line, col); }
+      else if (this.match(">")) this.add("FATARROW", "=>", line, col);
+      else throw new LexerError("Unexpected '=' (did you mean ':=' or '==='?)", line, col);
+      return;
+    }
+    if (ch === "!") { if (this.match("!")) this.add("NOT", "!!", line, col); else throw new LexerError("Single '!' is not valid — use '!!'", line, col); return; }
+    if (ch === "&") { if (this.match("&")) this.add("AND", "&&", line, col); else this.add("AMPERSAND", "&", line, col); return; }
+    if (ch === "|") { if (this.match("|")) this.add("OR", "||", line, col); else this.add("PIPE", "|", line, col); return; }
+    if (ch === "<") { if (this.match("<")) this.add("LSHIFT", "<<", line, col); else if (this.match("=")) this.add("LTE", "<=", line, col); else this.add("LT", "<", line, col); return; }
+    if (ch === ">") { if (this.match(">")) this.add("RSHIFT", ">>", line, col); else if (this.match("=")) this.add("GTE", ">=", line, col); else this.add("GT", ">", line, col); return; }
+    if (ch === ".") {
+      if (this.current() === "." && this.peek(1) === ".") { this.advance(); this.advance(); this.add("ELLIPSIS", "...", line, col); }
+      else if (this.match(".")) this.add("DOTDOT", "..", line, col);
+      else throw new LexerError("Lone '.' is not valid in Axioma", line, col);
+      return;
+    }
+    if (ch === "*") { if (this.match("*")) this.add("STARSTAR", "**", line, col); else if (this.match("=")) this.add("STAREQ", "*=", line, col); else this.add("STAR", "*", line, col); return; }
+    if (ch === "/") { if (this.match("/")) this.add("DOUBLESLASH", "//", line, col); else if (this.match("=")) this.add("SLASHEQ", "/=", line, col); else this.add("SLASH", "/", line, col); return; }
+    if (ch === "+") { if (this.match("=")) this.add("PLUSEQ", "+=", line, col); else this.add("PLUS", "+", line, col); return; }
+    if (ch in SINGLE_CHAR) { this.add(SINGLE_CHAR[ch], ch, line, col); return; }
+    throw new LexerError(`Unexpected character ${JSON.stringify(ch)}`, line, col);
+  }
+}
+
+global.AxiomaLexer = { Lexer, LexerError, KEYWORDS, SOURCE_EXTENSION };
+
+})(typeof window !== "undefined" ? window : global);
+/* Axioma Parser — JS port. Produces plain-object AST nodes: { kind, ...fields, line, col } */
+(function (global) {
+"use strict";
+
+class ParseError extends Error {
+  constructor(msg, tok) {
+    super(`[Parser] ${msg} — got ${tok.type}(${JSON.stringify(tok.value)}) at ${tok.line}:${tok.col}`);
+    this.token = tok;
+  }
+}
+
+function N(kind, fields) { return Object.assign({ kind }, fields); }
+
+const SET_OPS = new Set(["union", "intersect", "exclude", "cart"]);
+
+class Parser {
+  constructor(tokens) {
+    this.tokens = tokens.filter(t => t.type !== "COMMENT");
+    this.pos = 0;
+  }
+  current() { return this.tokens[this.pos]; }
+  peek(o = 1) { const i = this.pos + o; return i < this.tokens.length ? this.tokens[i] : this.tokens[this.tokens.length - 1]; }
+  advance() { const t = this.tokens[this.pos]; if (this.pos < this.tokens.length - 1) this.pos++; return t; }
+  check(tt, value) { const t = this.current(); if (t.type !== tt) return false; return value === undefined || t.value === value; }
+  match(tt, value) { if (this.check(tt, value)) return this.advance(); return null; }
+  expect(tt, value) {
+    if (this.check(tt, value)) return this.advance();
+    const hint = value !== undefined ? `'${value}'` : tt;
+    throw new ParseError(`Expected ${hint}`, this.current());
+  }
+  skipNewlines() { while (this.check("NEWLINE")) this.advance(); }
+  isKw(...words) { const t = this.current(); return t.type === "KEYWORD" && words.includes(t.value); }
+  expectKw(word) { if (this.isKw(word)) return this.advance(); throw new ParseError(`Expected keyword '${word}'`, this.current()); }
+  expectFieldName() {
+    const t = this.current();
+    if (t.type === "IDENT" || t.type === "KEYWORD") { this.advance(); return t.value; }
+    throw new ParseError("Expected a field name", t);
+  }
+
+  parse() {
+    const stmts = [];
+    this.skipNewlines();
+    while (!this.check("EOF")) { stmts.push(this.parseStmt()); this.skipNewlines(); }
+    return N("Program", { body: stmts });
+  }
+
+  parseStmt() {
+    const start = this.current();
+    const node = this._parseStmtInner();
+    if (node.line === undefined) { node.line = start.line; node.col = start.col; }
+    return node;
+  }
+
+  _parseStmtInner() {
+    const t = this.current();
+    if (t.type === "KEYWORD") {
+      const v = t.value;
+      if (v === "let") return this.parseVarDecl();
+      if (v === "where") return this.parseFuncDef();
+      if (v === "spawn") { this.advance(); return N("ExprStmt", { expr: N("SpawnExpr", { value: this.parseExpr() }) }); }
+      if (v === "report") { this.advance(); return N("ReturnStmt", { value: this.parseExpr() }); }
+      if (v === "each") return this.parseEach();
+      if (v === "repeat") return this.parseRepeat();
+      if (v === "given") return this.parseMatch();
+      if (v === "check") return this.parseCheck();
+      if (v === "abort") return this.parseAbort();
+      if (v === "using") { this.advance(); this.parseExpr(); return N("UsingStmt", {}); }
+      if (v === "from") { this.advance(); while (!this.check("NEWLINE") && !this.check("EOF")) this.advance(); return N("FromStmt", {}); }
+      if (v === "structure") return this.parseStructure();
+      if (v === "skip") { this.advance(); return N("SkipStmt", {}); }
+      if (v === "stop") { this.advance(); return N("StopStmt", {}); }
+      if (v === "next") { this.advance(); return N("NextStmt", {}); }
+      if (v === "drop") { this.advance(); const name = this.expect("IDENT").value; return N("DropStmt", { name }); }
+      if (v === "verify") { this.advance(); return N("VerifyStmt", { expr: this.parseExpr() }); }
+      if (v === "emit") { this.advance(); return N("EmitStmt", { value: this.parseExpr() }); }
+      if (v === "expand") { this.advance(); return N("ExpandStmt", { value: this.parseExpr() }); }
+      if (v === "if") return this.parseIfMain();
+      if (v === "export") { this.advance(); return this.parseStmt(); }
+    }
+    return this.parseExprStmt();
+  }
+
+  parseBlock() {
+    this.expectKw("begin"); this.skipNewlines();
+    const stmts = [];
+    while (!this.isKw("end") && !this.check("EOF")) { stmts.push(this.parseStmt()); this.skipNewlines(); }
+    this.expectKw("end");
+    return N("Block", { stmts });
+  }
+
+  // ── let / if-chain ──────────────────────────────────────────────────────
+  parseVarDecl() {
+    this.expectKw("let");
+    const t = this.current();
+    const expr = this.parseExpr();
+    if (this.isKw("begin")) return this._finishIfStmt(expr);
+    if (expr.kind !== "Identifier") throw new ParseError("Expected variable name after 'let'", t);
+    const name = expr.name;
+    let typeHint = null, domain = null;
+    if (this.match("DOMAIN")) {
+      domain = this._readType();
+      if (!this.check("ASSIGN")) return N("VarDecl", { name, typeHint, domain, value: null });
+    } else if (this.match("COLON")) {
+      typeHint = this._readType();
+    }
+    if (this.match("ASSIGN")) return N("VarDecl", { name, typeHint, domain, value: this.parseExpr() });
+    for (const [tt, op] of [["PLUSEQ", "+="], ["MINUSEQ", "-="], ["STAREQ", "*="], ["SLASHEQ", "/="]]) {
+      if (this.match(tt)) return N("Assign", { target: N("Identifier", { name }), op, value: this.parseExpr() });
+    }
+    return N("VarDecl", { name, typeHint, domain, value: null });
+  }
+
+  _readType() {
+    const t = this.current();
+    if (t.type === "KEYWORD" || t.type === "MATHSET" || t.type === "IDENT") { this.advance(); return t.value; }
+    throw new ParseError("Expected type name", t);
+  }
+
+  _finishIfStmt(firstCond) {
+    const branches = [];
+    let body = this.parseBlock();
+    branches.push([firstCond, body]); this.skipNewlines();
+    while (this.isKw("given")) {
+      this.advance(); const cond = this.parseExpr(); body = this.parseBlock();
+      branches.push([cond, body]); this.skipNewlines();
+    }
+    let otherwise = null;
+    if (this.isKw("otherwise")) { this.advance(); otherwise = this.parseBlock(); }
+    return N("IfStmt", { branches, otherwise });
+  }
+
+  // ── function def ────────────────────────────────────────────────────────
+  parseFuncDef(isSpawn = false) {
+    this.expectKw("where");
+    const name = this.expect("IDENT").value;
+    this.expect("LPAREN");
+    const params = this._parseParams();
+    this.expect("RPAREN");
+    let returnType = null;
+    if (this.match("COLON")) returnType = this._readType();
+    const body = this.parseBlock();
+    return N("FuncDef", { name, params, returnType, body, isSpawn });
+  }
+
+  _parseParams() {
+    const params = [];
+    while (!this.check("RPAREN") && !this.check("EOF")) {
+      let variadic = false;
+      if (this.match("ELLIPSIS")) variadic = true;
+      const name = this.expect("IDENT").value;
+      let typeHint = null;
+      if (this.match("COLON")) typeHint = this._readType();
+      let def = null;
+      if (this.match("ASSIGN")) def = this.parseExpr();
+      params.push(N("Param", { name, typeHint, def, variadic }));
+      if (!this.match("COMMA")) break;
+    }
+    return params;
+  }
+
+  // ── each / repeat ───────────────────────────────────────────────────────
+  parseEach() {
+    this.expectKw("each");
+    const v = this.expect("IDENT").value;
+    this.expectKw("in");
+    const iter = this.parseExpr();
+    const body = this.parseBlock();
+    return N("EachStmt", { varName: v, iter, body });
+  }
+  parseRepeat() {
+    this.expectKw("repeat");
+    const body = this.parseBlock();
+    this.skipNewlines();
+    this.expectKw("until");
+    const cond = this.parseExpr();
+    return N("RepeatStmt", { body, cond });
+  }
+
+  // ── given / case (match) ────────────────────────────────────────────────
+  parseMatch() {
+    this.expectKw("given");
+    const subject = this.parseExpr();
+    this.expect("COLON");
+    this.skipNewlines();
+    const cases = []; let dflt = null;
+    while (this.isKw("case") || this.isKw("otherwise")) {
+      if (this.isKw("otherwise")) {
+        this.advance(); this.expect("ARROW");
+        dflt = this._parseInlineBlock();
+        break;
+      }
+      this.advance();
+      const val = this.parseExpr();
+      this.expect("ARROW");
+      const body = this._parseInlineBlock();
+      cases.push([val, body]);
+      this.skipNewlines();
+    }
+    return N("MatchStmt", { subject, cases, dflt });
+  }
+  _parseInlineBlock() {
+    // `-> begin ... end` OR `-> singleStmt` (single-line arm, possibly on the next line)
+    this.skipNewlines();
+    if (this.isKw("begin")) return this.parseBlock();
+    const stmt = this.parseStmt();
+    return N("Block", { stmts: [stmt] });
+  }
+
+  // ── check / catch ───────────────────────────────────────────────────────
+  parseCheck() {
+    this.expectKw("check");
+    const body = this.parseBlock();
+    this.skipNewlines();
+    const catches = [];
+    while (this.isKw("catch")) {
+      this.advance();
+      let errorType = null, alias = null;
+      const t = this.current();
+      if ((t.type === "IDENT" || t.type === "KEYWORD") && t.value !== "as") errorType = this.advance().value;
+      if (this.isKw("as")) { this.advance(); alias = this.expect("IDENT").value; }
+      const catchBody = this.parseBlock();
+      catches.push(N("CatchClause", { errorType, alias, body: catchBody }));
+      this.skipNewlines();
+    }
+    let resolve = null;
+    if (this.isKw("resolve")) { this.advance(); resolve = this.parseBlock(); this.skipNewlines(); }
+    let always = null;
+    if (this.isKw("always")) { this.advance(); always = this.parseBlock(); }
+    return N("CheckStmt", { body, catches, resolve, always });
+  }
+
+  parseAbort() {
+    this.expectKw("abort");
+    const value = this.parseExpr();
+    let cause = null;
+    if (this.isKw("cause")) { this.advance(); cause = this.parseExpr(); }
+    return N("AbortStmt", { value, cause });
+  }
+
+  parseIfMain() { this.expectKw("if"); this.expectKw("main"); const body = this.parseBlock(); return N("IfMain", { body }); }
+
+  // ── structures ──────────────────────────────────────────────────────────
+  parseStructure() {
+    this.expectKw("structure");
+    const name = this.expect("IDENT").value;
+    let immutable = false;
+    if (this.match("LPAREN")) { if (this.isKw("immutable")) { this.advance(); immutable = true; } this.expect("RPAREN"); }
+    let base = null;
+    if (this.isKw("extends")) { this.advance(); base = this.expect("IDENT").value; }
+    this.expect("ASSIGN"); this.skipNewlines();
+    const members = [];
+    while (!this.isKw("end") && !this.check("EOF")) {
+      let isStatic = false, isFixed = false;
+      while (this.isKw("static") || this.isKw("fixed") || this.isKw("immutable")) {
+        if (this.isKw("static")) isStatic = true; else isFixed = true;
+        this.advance();
+      }
+      if (this.isKw("where")) members.push(this.parseFuncDef());
+      else if (this.isKw("create")) members.push(this._parseConstructor());
+      else if (this.isKw("property")) { this.advance(); members.push(this._parseStructField(isStatic, isFixed)); }
+      else if (this.current().type === "IDENT") members.push(this._parseStructField(isStatic, isFixed));
+      else break;
+      this.skipNewlines();
+    }
+    this.expectKw("end");
+    return N("StructDef", { name, base, immutable, members });
+  }
+  _parseStructField(isStatic, isFixed) {
+    const name = this.expectFieldName();
+    let typeHint = null;
+    if (this.match("COLON")) typeHint = this._readType();
+    let def = null;
+    if (this.match("ASSIGN")) def = this.parseExpr();
+    return N("StructField", { name, typeHint, def, isStatic, isFixed });
+  }
+  _parseConstructor() {
+    this.expectKw("create"); this.expect("LPAREN");
+    const params = this._parseParams(); this.expect("RPAREN");
+    const body = this.parseBlock();
+    return N("FuncDef", { name: "create", params, returnType: null, body, isSpawn: false });
+  }
+
+  // ── expression statement / assignment ──────────────────────────────────
+  parseExprStmt() {
+    const expr = this.parseExpr();
+    for (const [tt, op] of [["ASSIGN", ":="], ["PLUSEQ", "+="], ["MINUSEQ", "-="], ["STAREQ", "*="], ["SLASHEQ", "/="]]) {
+      if (this.match(tt)) return N("Assign", { target: expr, op, value: this.parseExpr() });
+    }
+    return N("ExprStmt", { expr });
+  }
+
+  // ── expression precedence chain ────────────────────────────────────────
+  parseExpr() { return this.parseTernary(); }
+  parseTernary() {
+    const node = this.parseOr();
+    if (this.match("QUESTION")) {
+      const thenE = this.parseOr(); this.expect("COLON"); const elseE = this.parseTernary();
+      return N("Ternary", { cond: node, thenExpr: thenE, elseExpr: elseE });
+    }
+    return node;
+  }
+  parseOr() { let n = this.parseAnd(); while (this.match("OR")) n = N("BinaryOp", { op: "||", left: n, right: this.parseAnd() }); return n; }
+  parseAnd() { let n = this.parseNot(); while (this.match("AND")) n = N("BinaryOp", { op: "&&", left: n, right: this.parseNot() }); return n; }
+  parseNot() { if (this.match("NOT")) return N("UnaryOp", { op: "!!", operand: this.parseNot() }); return this.parseComparison(); }
+  parseComparison() {
+    let n = this.parseSetOps();
+    const CMP = { EQ: "===", NEQ: "=!=", LT: "<", GT: ">", LTE: "<=", GTE: ">=" };
+    while (CMP[this.current().type]) { const op = CMP[this.advance().type]; n = N("BinaryOp", { op, left: n, right: this.parseSetOps() }); }
+    return n;
+  }
+  parseSetOps() {
+    let n = this.parseAdditive();
+    while (this.current().type === "KEYWORD" && SET_OPS.has(this.current().value)) {
+      const op = this.advance().value; n = N("BinaryOp", { op, left: n, right: this.parseAdditive() });
+    }
+    return n;
+  }
+  parseAdditive() {
+    let n = this.parseMultiplicative();
+    while (this.current().type === "PLUS" || this.current().type === "MINUS") {
+      const op = this.advance().value; n = N("BinaryOp", { op, left: n, right: this.parseMultiplicative() });
+    }
+    return n;
+  }
+  parseMultiplicative() {
+    let n = this.parsePower();
+    const OPS = { STAR: "*", SLASH: "/", DOUBLESLASH: "//", PERCENT: "%" };
+    while (OPS[this.current().type]) { const op = OPS[this.advance().type]; n = N("BinaryOp", { op, left: n, right: this.parsePower() }); }
+    return n;
+  }
+  parsePower() {
+    const n = this.parseUnary();
+    if (this.match("STARSTAR")) return N("BinaryOp", { op: "**", left: n, right: this.parsePower() });
+    return n;
+  }
+  parseUnary() {
+    if (this.match("MINUS")) return N("UnaryOp", { op: "-", operand: this.parseUnary() });
+    if (this.match("HASH")) return N("LenOp", { operand: this.parsePostfix() });
+    return this.parsePostfix();
+  }
+
+  parsePostfix() {
+    let node = this.parsePrimary();
+    for (;;) {
+      if (this.match("LPAREN")) {
+        const args = [];
+        while (!this.check("RPAREN") && !this.check("EOF")) { args.push(this.parseExpr()); if (!this.match("COMMA")) break; }
+        this.expect("RPAREN");
+        node = N("Call", { callee: node, args });
+      } else if (this.match("PRIME")) {
+        const field = this.expectFieldName();
+        node = N("Projection", { obj: node, field });
+      } else if (this.match("LBRACKET")) {
+        const idx = this.parseExpr();
+        if (this.match("DOTDOT")) {
+          const stop = this.parseExpr(); let step = null;
+          if (this.isKw("by")) { this.advance(); step = this.parseExpr(); }
+          this.expect("RBRACKET");
+          node = N("Slice", { obj: node, start: idx, stop, step });
+        } else { this.expect("RBRACKET"); node = N("Subscript", { obj: node, index: idx }); }
+      } else break;
+    }
+    return node;
+  }
+
+  parsePrimary() {
+    const t = this.current();
+    if (t.type === "INTEGER" || t.type === "REAL" || t.type === "BOOL") { this.advance(); return N("Literal", { value: t.value }); }
+    if (t.type === "NULL") { this.advance(); return N("Literal", { value: null }); }
+    if (t.type === "STRING") {
+      this.advance();
+      if (t.value && typeof t.value === "object" && t.value.interp) return N("InterpolatedString", { raw: t.value.raw });
+      return N("Literal", { value: t.value });
+    }
+    if (t.type === "MATHSET") {
+      this.advance();
+      if (this.check("LPAREN")) return N("Identifier", { name: t.value });
+      return N("MathSet", { name: t.value });
+    }
+    if (t.type === "IDENT" || t.type === "KEYWORD") {
+      const v = t.value;
+      if (v === "collect") { this.advance(); return N("CollectExpr", { value: this.parseExpr() }); }
+      if (v === "spawn") { this.advance(); return N("SpawnExpr", { value: this.parseExpr() }); }
+      if (v === "fn") return this.parseLambda();
+      this.advance();
+      return N("Identifier", { name: v });
+    }
+    if (t.type === "LPAREN") { this.advance(); const n = this.parseExpr(); this.expect("RPAREN"); return n; }
+    if (t.type === "LBRACKET") return this.parseListOrComp();
+    if (t.type === "LBRACE") return this.parseBraceExpr();
+    if (t.type === "LANGLE") return this.parseGeneratorComp();
+    if (t.type === "HASH") { this.advance(); return N("LenOp", { operand: this.parsePostfix() }); }
+    throw new ParseError("Unexpected token in expression", t);
+  }
+
+  parseLambda() {
+    this.expectKw("fn"); this.expect("LPAREN");
+    const params = this._parseParams(); this.expect("RPAREN"); this.expect("FATARROW");
+    const body = this.parseExpr();
+    return N("LambdaExpr", { params, body });
+  }
+
+  parseListOrComp() {
+    this.expect("LBRACKET");
+    if (this.check("RBRACKET")) { this.advance(); return N("ListExpr", { elements: [] }); }
+    const first = this.parseExpr();
+    if (this.match("PIPE")) {
+      const clauses = this._parseCompClauses();
+      this.expect("RBRACKET");
+      return N("ListComp", { expr: first, clauses });
+    }
+    const elements = [first];
+    while (this.match("COMMA")) { if (this.check("RBRACKET")) break; elements.push(this.parseExpr()); }
+    this.expect("RBRACKET");
+    return N("ListExpr", { elements });
+  }
+
+  parseBraceExpr() {
+    this.expect("LBRACE");
+    if (this.check("RBRACE")) { this.advance(); return N("SetExpr", { elements: [] }); }
+    const first = this.parseExpr();
+    if (this.match("DOTDOT")) {
+      const stop = this.parseExpr(); this.expect("RBRACE");
+      return N("Range", { start: first, stop });
+    }
+    if (this.match("COLON")) {
+      const val = this.parseExpr();
+      const pairs = [[first, val]];
+      while (this.match("COMMA")) { const k = this.parseExpr(); this.expect("COLON"); const v = this.parseExpr(); pairs.push([k, v]); }
+      this.expect("RBRACE");
+      return N("MappingExpr", { pairs });
+    }
+    if (this.match("PIPE")) {
+      const clauses = this._parseCompClauses();
+      this.expect("RBRACE");
+      return N("SetComp", { expr: first, clauses });
+    }
+    const elements = [first];
+    while (this.match("COMMA")) { if (this.check("RBRACE")) break; elements.push(this.parseExpr()); }
+    this.expect("RBRACE");
+    return N("SetExpr", { elements });
+  }
+
+  parseGeneratorComp() {
+    this.expect("LANGLE");
+    const expr = this.parseExpr(); this.expect("PIPE");
+    const clauses = this._parseCompClauses();
+    this.expect("RANGLE");
+    return N("GeneratorComp", { expr, clauses });
+  }
+
+  _parseCompClauses() {
+    // var in iter [, cond]*
+    const varName = this.expect("IDENT").value;
+    this.expectKw("in");
+    const iter = this.parseExpr();
+    const conds = [];
+    while (this.match("COMMA")) conds.push(this.parseExpr());
+    return { varName, iter, conds };
+  }
+}
+
+global.AxiomaParser = { Parser, ParseError, N };
+
+})(typeof window !== "undefined" ? window : global);
+/* Axioma Interpreter — JS port. Tree-walk evaluator over the parser's AST. */
+(function (global) {
+"use strict";
+
+class ReturnSignal { constructor(value) { this.value = value; } }
+class StopSignal {}
+class NextSignal {}
+class AxiomaError extends Error {
+  constructor(value, cause, line, col) {
+    super(axiomaStrSafe(value));
+    this.value = value; this.cause = cause || null;
+    this.line = line != null ? line : null; this.col = col != null ? col : null;
+  }
+  toString() {
+    const base = axiomaStrSafe(this.value);
+    return this.line != null ? `${base} (at line ${this.line}, col ${this.col != null ? this.col : "?"})` : base;
+  }
+}
+function axiomaStrSafe(v) { try { return axiomaStr(v); } catch (e) { return String(v); } }
+
+// ── Environment ─────────────────────────────────────────────────────────────
+class Environment {
+  constructor(parent = null) { this.vars = new Map(); this.parent = parent; }
+  get(name) {
+    let env = this;
+    while (env) { if (env.vars.has(name)) return env.vars.get(name); env = env.parent; }
+    throw new AxiomaError(`Undefined variable '${name}'`);
+  }
+  set(name, value) { this.vars.set(name, value); }
+  assign(name, value) {
+    let env = this;
+    while (env) { if (env.vars.has(name)) { env.vars.set(name, value); return; } env = env.parent; }
+    this.vars.set(name, value);
+  }
+  drop(name) {
+    let env = this;
+    while (env) { if (env.vars.has(name)) { env.vars.delete(name); return; } env = env.parent; }
+    throw new AxiomaError(`Cannot drop undefined variable '${name}'`);
+  }
+}
+
+// ── Runtime value wrappers ──────────────────────────────────────────────────
+class AxiomaSet {
+  constructor(iterable) { this.items = []; if (iterable) for (const x of iterable) this.add(x); }
+  add(x) { if (!this.items.some(y => axiomaEq(y, x))) this.items.push(x); }
+  has(x) { return this.items.some(y => axiomaEq(y, x)); }
+  get size() { return this.items.length; }
+  [Symbol.iterator]() { return this.items[Symbol.iterator](); }
+}
+class AxiomaMap {
+  constructor() { this.keys_ = []; this.vals_ = []; }
+  static from(pairs) { const m = new AxiomaMap(); for (const [k, v] of pairs) m.set(k, v); return m; }
+  _idx(k) { return this.keys_.findIndex(x => axiomaEq(x, k)); }
+  get(k) { const i = this._idx(k); return i === -1 ? undefined : this.vals_[i]; }
+  has(k) { return this._idx(k) !== -1; }
+  set(k, v) { const i = this._idx(k); if (i === -1) { this.keys_.push(k); this.vals_.push(v); } else { this.vals_[i] = v; } }
+  delete(k) { const i = this._idx(k); if (i !== -1) { this.keys_.splice(i, 1); this.vals_.splice(i, 1); } }
+  get size() { return this.keys_.length; }
+  entries() { const r = []; for (let i = 0; i < this.keys_.length; i++) r.push([this.keys_[i], this.vals_[i]]); return r; }
+}
+function axiomaEq(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => axiomaEq(x, b[i]));
+  return false;
+}
+
+class AxiomaFunction { constructor(node, closure) { this.node = node; this.closure = closure; } }
+class AxiomaLambda { constructor(node, closure) { this.node = node; this.closure = closure; } }
+class AxiomaStructClass {
+  constructor(node, closure) {
+    this.node = node; this.closure = closure; this.statics = new Map();
+    this.immutableFields = new Set(node.members.filter(m => m.kind === "StructField" && m.isFixed).map(m => m.name));
+  }
+}
+class AxiomaInstance {
+  constructor(structClass) { this.structClass = structClass; this.fields = new Map(); this.locked = false; }
+}
+class NativeFn { constructor(name, fn) { this.name = name; this.fn = fn; } }
+
+// ── Display helpers ──────────────────────────────────────────────────────
+function sortedItems(items) {
+  return [...items].sort((a, b) => { const sa = String(a), sb = String(b); return sa < sb ? -1 : sa > sb ? 1 : 0; });
+}
+function axiomaRepr(v) {
+  if (v === null || v === undefined) return "Null";
+  if (v === true) return "T";
+  if (v === false) return "F";
+  if (typeof v === "string") return `"${v}"`;
+  if (Array.isArray(v)) return "[" + v.map(axiomaRepr).join(", ") + "]";
+  if (v instanceof AxiomaSet) return "{" + sortedItems(v.items).map(axiomaRepr).join(", ") + "}";
+  if (v instanceof AxiomaMap) return "{" + v.entries().map(([k, val]) => `${axiomaRepr(k)}: ${axiomaRepr(val)}`).join(", ") + "}";
+  if (v instanceof AxiomaInstance) {
+    const parts = [];
+    v.fields.forEach((val, k) => parts.push(`${k}: ${axiomaRepr(val)}`));
+    return `${v.structClass.node.name}(${parts.join(", ")})`;
+  }
+  if (typeof v === "number") return String(v);
+  return String(v);
+}
+function axiomaStr(v) {
+  if (v === null || v === undefined) return "Null";
+  if (v === true) return "T";
+  if (v === false) return "F";
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) return "[" + v.map(axiomaRepr).join(", ") + "]";
+  if (v instanceof AxiomaSet) return "{" + sortedItems(v.items).map(axiomaRepr).join(", ") + "}";
+  if (v instanceof AxiomaMap) return "{" + v.entries().map(([k, val]) => `${axiomaRepr(k)}: ${axiomaRepr(val)}`).join(", ") + "}";
+  if (v instanceof AxiomaInstance) return axiomaRepr(v);
+  return String(v);
+}
+
+// ── Interpreter ──────────────────────────────────────────────────────────
+class Interpreter {
+  constructor(io) {
+    const { Lexer } = global.AxiomaLexer;
+    const { Parser } = global.AxiomaParser;
+    this._Lexer = Lexer; this._Parser = Parser;
+    this.io = io || { out: (s) => console.log(s) };
+    this.globalEnv = new Environment();
+    this.env = this.globalEnv;
+    this.currentLine = null; this.currentCol = null;
+    this._makeBuiltins().forEach((v, k) => this.globalEnv.set(k, v));
+    this._steps = 0;
+    this._maxSteps = 5_000_000;
+  }
+
+  run(source) {
+    const tokens = new this._Lexer(source).tokenize();
+    const ast = new this._Parser(tokens).parse();
+    this.execProgram(ast);
+  }
+
+  execProgram(node) { for (const s of node.body) this.execStmt(s); }
+  execBlock(node, env = null, scoped = true) {
+    const outer = this.env;
+    if (env !== null) this.env = env;
+    else if (scoped) this.env = new Environment(this.env);
+    try { for (const s of node.stmts) this.execStmt(s); }
+    finally { this.env = outer; }
+  }
+
+  execStmt(node) {
+    if (++this._steps > this._maxSteps) throw new AxiomaError("Execution step limit exceeded (possible infinite loop)");
+    if (node.line !== undefined) { this.currentLine = node.line; this.currentCol = node.col; }
+    try {
+      switch (node.kind) {
+        case "VarDecl": return this.execVarDecl(node);
+        case "FuncDef": return this.execFuncDef(node);
+        case "ReturnStmt": throw new ReturnSignal(this.evalExpr(node.value));
+        case "IfStmt": return this.execIf(node);
+        case "EachStmt": return this.execEach(node);
+        case "RepeatStmt": return this.execRepeat(node);
+        case "MatchStmt": return this.execMatch(node);
+        case "CheckStmt": return this.execCheck(node);
+        case "AbortStmt": return this.execAbort(node);
+        case "UsingStmt": case "FromStmt": return;
+        case "StructDef": return this.execStructDef(node);
+        case "ExprStmt": return void this.evalExpr(node.expr);
+        case "SkipStmt": return;
+        case "StopStmt": throw new StopSignal();
+        case "NextStmt": throw new NextSignal();
+        case "DropStmt": return this.env.drop(node.name);
+        case "VerifyStmt": return this.execVerify(node);
+        case "EmitStmt": throw new ReturnSignal(this.evalExpr(node.value));
+        case "ExpandStmt": return this.execExpand(node);
+        case "IfMain": return this.execBlock(node.body);
+        case "Assign": return this.execAssign(node);
+        default: throw new AxiomaError(`Unknown statement type: ${node.kind}`);
+      }
+    } catch (e) {
+      if (e instanceof AxiomaError && e.line == null) { e.line = this.currentLine; e.col = this.currentCol; }
+      throw e;
+    }
+  }
+
+  execVarDecl(node) { this.env.set(node.name, node.value !== null ? this.evalExpr(node.value) : null); }
+  execFuncDef(node) { this.env.set(node.name, new AxiomaFunction(node, this.env)); }
+
+  execStructDef(node) {
+    const cls = new AxiomaStructClass(node, this.env);
+    this.env.set(node.name, cls);
+    const env = new Environment(cls.closure);
+    const outer = this.env; this.env = env;
+    try {
+      for (const m of node.members) if (m.kind === "StructField" && m.isStatic) cls.statics.set(m.name, m.def !== null ? this.evalExpr(m.def) : null);
+    } finally { this.env = outer; }
+  }
+
+  execIf(node) {
+    for (const [cond, block] of node.branches) if (this._truthy(this.evalExpr(cond))) { this.execBlock(block, null, false); return; }
+    if (node.otherwise) this.execBlock(node.otherwise, null, false);
+  }
+
+  execEach(node) {
+    const iterable = this.evalExpr(node.iter);
+    const items = this._toIterable(iterable);
+    for (const item of items) {
+      this.env.set(node.varName, item);
+      try { this.execBlock(node.body, null, false); }
+      catch (e) { if (e instanceof StopSignal) break; if (e instanceof NextSignal) continue; throw e; }
+    }
+  }
+
+  execRepeat(node) {
+    for (;;) {
+      let broke = false;
+      try { this.execBlock(node.body, null, false); }
+      catch (e) {
+        if (e instanceof StopSignal) { broke = true; }
+        else if (e instanceof NextSignal) { /* fallthrough to until-check */ }
+        else throw e;
+      }
+      if (broke || this._truthy(this.evalExpr(node.cond))) break;
+    }
+  }
+
+  execMatch(node) {
+    const subject = this.evalExpr(node.subject);
+    for (const [valNode, block] of node.cases) if (axiomaEq(this.evalExpr(valNode), subject)) { this.execBlock(block, null, false); return; }
+    if (node.dflt) this.execBlock(node.dflt, null, false);
+  }
+
+  static errorTypeName(value) {
+    if (value instanceof AxiomaInstance) return value.structClass.node.name;
+    if (typeof value === "string") return "Error";
+    if (value === null || value === undefined) return "Null";
+    if (typeof value === "boolean") return "Bool";
+    if (typeof value === "number") return Number.isInteger(value) ? "ZZ" : "RR";
+    return typeof value;
+  }
+
+  execCheck(node) {
+    let errorOccurred = false;
+    try { this.execBlock(node.body); }
+    catch (e) {
+      if (!(e instanceof AxiomaError)) throw e;
+      errorOccurred = true;
+      let handled = false;
+      for (const clause of node.catches) {
+        if (clause.errorType === null || clause.errorType === Interpreter.errorTypeName(e.value)) {
+          const env = new Environment(this.env);
+          if (clause.alias) env.set(clause.alias, e.value);
+          this.execBlock(clause.body, env);
+          handled = true; break;
+        }
+      }
+      if (!handled) { if (node.always) this.execBlock(node.always); throw e; }
+      if (node.always) this.execBlock(node.always);
+      return;
+    }
+    if (node.resolve && !errorOccurred) this.execBlock(node.resolve);
+    if (node.always) this.execBlock(node.always);
+  }
+
+  execAbort(node) {
+    const value = this.evalExpr(node.value);
+    const cause = node.cause ? this.evalExpr(node.cause) : null;
+    throw new AxiomaError(value, cause, this.currentLine, this.currentCol);
+  }
+
+  execVerify(node) {
+    const result = this.evalExpr(node.expr);
+    if (!this._truthy(result)) throw new AxiomaError(`Verification failed`);
+  }
+
+  execExpand(node) { this.evalExpr(node.value); }
+
+  execAssign(node) {
+    let value = this.evalExpr(node.value);
+    if (node.op !== ":=") {
+      const current = this._resolveTarget(node.target);
+      if (node.op === "+=") value = this._add(current, value);
+      else if (node.op === "-=") value = current - value;
+      else if (node.op === "*=") value = current * value;
+      else if (node.op === "/=") value = current / value;
+    }
+    this._assignTarget(node.target, value);
+  }
+
+  _resolveTarget(target) {
+    if (target.kind === "Identifier") return this.env.get(target.name);
+    if (target.kind === "Projection") {
+      const obj = this.evalExpr(target.obj);
+      if (obj instanceof AxiomaStructClass) return obj.statics.get(target.field);
+      if (obj instanceof AxiomaInstance) return obj.fields.has(target.field) ? obj.fields.get(target.field) : obj.structClass.statics.get(target.field);
+    }
+    throw new AxiomaError("Cannot resolve assignment target");
+  }
+
+  _assignTarget(target, value) {
+    if (target.kind === "Identifier") { this.env.assign(target.name, value); return; }
+    if (target.kind === "Projection") {
+      const obj = this.evalExpr(target.obj);
+      if (obj instanceof AxiomaStructClass) {
+        if (!obj.statics.has(target.field)) throw new AxiomaError(`'${obj.node.name}' has no static property '${target.field}'`);
+        obj.statics.set(target.field, value); return;
+      }
+      if (obj instanceof AxiomaInstance) {
+        const cls = obj.structClass;
+        if (cls.immutableFields.has(target.field) && obj.locked) throw new AxiomaError(`Cannot reassign '${target.field}' — declared 'fixed' on structure '${cls.node.name}'`);
+        if (cls.statics.has(target.field)) cls.statics.set(target.field, value);
+        else obj.fields.set(target.field, value);
+        return;
+      }
+      throw new AxiomaError("Cannot set field on non-instance");
+    }
+    if (target.kind === "Subscript") {
+      const obj = this.evalExpr(target.obj);
+      const idx = this.evalExpr(target.index);
+      if (Array.isArray(obj)) { obj[this._normIdx(obj, idx)] = value; return; }
+      if (obj instanceof AxiomaMap) { obj.set(idx, value); return; }
+      throw new AxiomaError("Subscript assignment requires Sequence or Mapping");
+    }
+    throw new AxiomaError("Invalid assignment target");
+  }
+
+  _normIdx(arr, idx) { return idx < 0 ? arr.length + idx : idx; }
+  _add(a, b) { if (Array.isArray(a) && Array.isArray(b)) return a.concat(b); return a + b; }
+
+  // ── expressions ──────────────────────────────────────────────────────
+  evalExpr(node) {
+    try {
+      switch (node.kind) {
+        case "Literal": return node.value;
+        case "InterpolatedString": return this._resolveInterpolation(node.raw);
+        case "MathSet": return node.name;
+        case "Identifier": return this._evalIdent(node);
+        case "BinaryOp": return this._evalBinary(node);
+        case "UnaryOp": return this._evalUnary(node);
+        case "LenOp": return this._length(this.evalExpr(node.operand));
+        case "Call": return this._evalCall(node);
+        case "Projection": return this._evalProjection(node);
+        case "Subscript": return this._evalSubscript(node);
+        case "Slice": return this._evalSlice(node);
+        case "Range": { const s = this.evalExpr(node.start), e = this.evalExpr(node.stop); const r = []; for (let i = s; i <= e; i++) r.push(i); return r; }
+        case "Ternary": return this._truthy(this.evalExpr(node.cond)) ? this.evalExpr(node.thenExpr) : this.evalExpr(node.elseExpr);
+        case "LambdaExpr": return new AxiomaLambda(node, this.env);
+        case "ListExpr": return node.elements.map(e => this.evalExpr(e));
+        case "SetExpr": return new AxiomaSet(node.elements.map(e => this.evalExpr(e)));
+        case "MappingExpr": return AxiomaMap.from(node.pairs.map(([k, v]) => [this.evalExpr(k), this.evalExpr(v)]));
+        case "ListComp": return this._evalListComp(node);
+        case "SetComp": return this._evalSetComp(node);
+        case "MappingComp": return this._evalMappingComp(node);
+        case "GeneratorComp": return this._evalListComp(node); // eager, treated as list
+        case "Assign": this.execAssign(node); return null;
+        case "CollectExpr": return this.evalExpr(node.value);
+        case "SpawnExpr": return this.evalExpr(node.value);
+        case "ExprStmt": return this.evalExpr(node.expr);
+        default: throw new AxiomaError(`Unknown expression type: ${node.kind}`);
+      }
+    } catch (e) {
+      if (e instanceof AxiomaError && e.line == null) { e.line = this.currentLine; e.col = this.currentCol; }
+      throw e;
+    }
+  }
+
+  _length(v) {
+    if (typeof v === "string") return v.length;
+    if (Array.isArray(v)) return v.length;
+    if (v instanceof AxiomaSet || v instanceof AxiomaMap) return v.size;
+    throw new AxiomaError(`# (length) not supported on ${axiomaRepr(v)}`);
+  }
+
+  _evalIdent(node) {
+    if (node.name === "T") return true;
+    if (node.name === "F") return false;
+    if (node.name === "Null") return null;
+    return this.env.get(node.name);
+  }
+
+  _evalBinary(node) {
+    if (node.op === "&&") return this._truthy(this.evalExpr(node.left)) && this._truthy(this.evalExpr(node.right));
+    if (node.op === "||") return this._truthy(this.evalExpr(node.left)) || this._truthy(this.evalExpr(node.right));
+    const left = this.evalExpr(node.left), right = this.evalExpr(node.right);
+    const op = node.op;
+    switch (op) {
+      case "+": return this._add(left, right);
+      case "-": return left - right;
+      case "*": return left * right;
+      case "/": if (right === 0) throw new AxiomaError("Division by zero"); return left / right;
+      case "//": if (right === 0) throw new AxiomaError("Division by zero"); return Math.floor(left / right);
+      case "%": return ((left % right) + right) % right;
+      case "**": return Math.pow(left, right);
+      case "===": return axiomaEq(left, right);
+      case "=!=": return !axiomaEq(left, right);
+      case "<": return left < right;
+      case ">": return left > right;
+      case "<=": return left <= right;
+      case ">=": return left >= right;
+      case "&": return left & right;
+      case "|": return left | right;
+      case "^": return left ^ right;
+      case "<<": return left << right;
+      case ">>": return left >> right;
+      case "union": return new AxiomaSet([...this._toSet(left), ...this._toSet(right)]);
+      case "intersect": { const rs = this._toSet(right); return new AxiomaSet(this._toSet(left).filter(x => rs.some(y => axiomaEq(x, y)))); }
+      case "exclude": { const rs = this._toSet(right); return new AxiomaSet(this._toSet(left).filter(x => !rs.some(y => axiomaEq(x, y)))); }
+      case "cart": { const out = []; for (const a of left) for (const b of right) out.push([a, b]); return out; }
+    }
+    throw new AxiomaError(`Unknown binary operator: ${op}`);
+  }
+  _toSet(v) { if (v instanceof AxiomaSet) return v.items; if (Array.isArray(v)) return v; throw new AxiomaError("Expected a Set/Sequence"); }
+
+  _evalUnary(node) {
+    const val = this.evalExpr(node.operand);
+    if (node.op === "-") return -val;
+    if (node.op === "!!") return !this._truthy(val);
+    throw new AxiomaError(`Unknown unary operator: ${node.op}`);
+  }
+
+  _evalCall(node) {
+    const callee = this.evalExpr(node.callee);
+    const args = node.args.map(a => this.evalExpr(a));
+    return this._invoke(callee, args);
+  }
+
+  _invoke(callee, args) {
+    if (callee instanceof NativeFn) return callee.fn(...args);
+    if (callee instanceof AxiomaStructClass) return this._instantiate(callee, args);
+    if (callee instanceof AxiomaFunction) return this._callAxiomaFn(callee.node, callee.closure, args);
+    if (callee instanceof AxiomaLambda) return this._callLambda(callee, args);
+    if (typeof callee === "function") return callee(...args);
+    throw new AxiomaError(`'${axiomaRepr(callee)}' is not callable`);
+  }
+
+  _callAxiomaFn(node, closure, args) {
+    const env = new Environment(closure);
+    this._bindParams(node.params, args, env);
+    const outer = this.env; this.env = env;
+    try { this.execBlock(node.body, env); return null; }
+    catch (e) { if (e instanceof ReturnSignal) return e.value; throw e; }
+    finally { this.env = outer; }
+  }
+  _callLambda(lam, args) {
+    const env = new Environment(lam.closure);
+    this._bindParams(lam.node.params, args, env);
+    const outer = this.env; this.env = env;
+    try { return this.evalExpr(lam.node.body); }
+    finally { this.env = outer; }
+  }
+  _bindParams(params, args, env) {
+    for (let i = 0; i < params.length; i++) {
+      const p = params[i];
+      if (p.variadic) { env.set(p.name, args.slice(i)); return; }
+      env.set(p.name, i < args.length ? args[i] : (p.def !== null ? this.evalExpr(p.def) : null));
+    }
+  }
+
+  _instantiate(cls, args) {
+    const instance = new AxiomaInstance(cls);
+    if (cls.node.base) {
+      const baseCls = this.env.get(cls.node.base);
+      if (baseCls instanceof AxiomaStructClass) {
+        const baseInst = this._instantiate(baseCls, []);
+        baseInst.fields.forEach((v, k) => instance.fields.set(k, v));
+      }
+    }
+    const env = new Environment(cls.closure);
+    env.set("this", instance);
+    const outer = this.env; this.env = env;
+    try {
+      for (const m of cls.node.members) if (m.kind === "StructField" && !m.isStatic) instance.fields.set(m.name, m.def !== null ? this.evalExpr(m.def) : null);
+      for (const m of cls.node.members) if (m.kind === "FuncDef" && m.name === "create") { this._callAxiomaFn(m, env, args); break; }
+      instance.locked = true;
+    } finally { this.env = outer; }
+    return instance;
+  }
+
+  _callMethod(instance, methodName, args) {
+    const cls = instance.structClass;
+    for (const m of cls.node.members) if (m.kind === "FuncDef" && m.name === methodName) {
+      const env = new Environment(cls.closure); env.set("this", instance);
+      return this._callAxiomaFn(m, env, args);
+    }
+    return null;
+  }
+
+  _evalProjection(node) {
+    const obj = this.evalExpr(node.obj);
+    if (obj instanceof AxiomaStructClass) {
+      if (obj.statics.has(node.field)) return obj.statics.get(node.field);
+      throw new AxiomaError(`'${obj.node.name}' has no static property '${node.field}'`);
+    }
+    if (obj instanceof AxiomaInstance) {
+      if (obj.fields.has(node.field)) return obj.fields.get(node.field);
+      const cls = obj.structClass;
+      if (cls.statics.has(node.field)) return cls.statics.get(node.field);
+      for (const m of cls.node.members) if (m.kind === "FuncDef" && m.name === node.field) {
+        return new NativeFn(node.field, (...a) => this._callMethod(obj, node.field, a));
+      }
+      throw new AxiomaError(`'${cls.node.name}' has no field or method '${node.field}'`);
+    }
+    if (typeof obj === "string") { if (node.field === "length") return obj.length; if (node.field === "upper") return obj.toUpperCase(); if (node.field === "lower") return obj.toLowerCase(); }
+    if (Array.isArray(obj)) { if (node.field === "length") return obj.length; }
+    throw new AxiomaError(`Cannot project '${node.field}' on ${axiomaRepr(obj)}`);
+  }
+
+  _evalSubscript(node) {
+    const obj = this.evalExpr(node.obj), idx = this.evalExpr(node.index);
+    try {
+      if (Array.isArray(obj) || typeof obj === "string") { const i = this._normIdx(obj, idx); const v = obj[i]; if (v === undefined) throw 0; return v; }
+      if (obj instanceof AxiomaMap) { if (!obj.has(idx)) throw 0; return obj.get(idx); }
+    } catch (e) { throw new AxiomaError(`Index error: ${axiomaRepr(idx)}`); }
+    throw new AxiomaError(`Cannot subscript ${axiomaRepr(obj)}`);
+  }
+
+  _evalSlice(node) {
+    const obj = this.evalExpr(node.obj);
+    const start = this.evalExpr(node.start), stop = this.evalExpr(node.stop);
+    const step = node.step ? this.evalExpr(node.step) : 1;
+    if (Array.isArray(obj)) {
+      const out = [];
+      if (step > 0) for (let i = start; i <= stop; i += step) out.push(obj[i]);
+      else for (let i = start; i >= stop; i += step) out.push(obj[i]);
+      return out;
+    }
+    throw new AxiomaError("Slice requires a Sequence");
+  }
+
+  _evalListComp(node) {
+    const out = [];
+    this._iterComp(node.clauses, () => out.push(this.evalExpr(node.expr)));
+    return out;
+  }
+  _evalSetComp(node) {
+    const out = new AxiomaSet();
+    this._iterComp(node.clauses, () => out.add(this.evalExpr(node.expr)));
+    return out;
+  }
+  _evalMappingComp(node) {
+    const out = new AxiomaMap();
+    this._iterComp(node.clauses, () => out.set(this.evalExpr(node.key), this.evalExpr(node.value)));
+    return out;
+  }
+  _iterComp(clauses, emit) {
+    const iterable = this.evalExpr(clauses.iter);
+    const env = new Environment(this.env);
+    const outer = this.env; this.env = env;
+    try {
+      for (const item of this._toIterable(iterable)) {
+        env.set(clauses.varName, item);
+        if (clauses.conds.every(c => this._truthy(this.evalExpr(c)))) emit();
+      }
+    } finally { this.env = outer; }
+  }
+
+  _toIterable(v) {
+    if (Array.isArray(v)) return v;
+    if (typeof v === "string") return [...v];
+    if (v instanceof AxiomaSet) return v.items;
+    if (v instanceof AxiomaMap) return v.keys_;
+    throw new AxiomaError(`Cannot iterate over ${axiomaRepr(v)}`);
+  }
+
+  _truthy(v) { if (v === null || v === undefined) return false; if (v === false) return false; if (v === 0) return false; if (v === "") return false; if (Array.isArray(v) && v.length === 0) return false; return true; }
+
+  _resolveInterpolation(raw) {
+    const self = this;
+    return raw.replace(/\{([^}]+)\}/g, (m, exprSrc) => {
+      const tokens = new self._Lexer(exprSrc.trim()).tokenize();
+      const prog = new self._Parser(tokens).parse();
+      const first = prog.body[0];
+      const expr = first.kind === "ExprStmt" ? first.expr : first;
+      return axiomaStr(self.evalExpr(expr));
+    });
+  }
+
+  // ── Builtins ─────────────────────────────────────────────────────────
+  _makeBuiltins() {
+    const self = this;
+    const callFn = (fn, args) => self._invoke(fn, args);
+    const map = new Map();
+    const def = (name, fn) => map.set(name, new NativeFn(name, fn));
+
+    def("out", (...args) => { self.io.out(args.map(axiomaStr).join(" ")); return null; });
+    def("type", (x) => {
+      if (x === null || x === undefined) return "Null";
+      if (typeof x === "boolean") return "Bool";
+      if (typeof x === "number") return Number.isInteger(x) ? "ZZ" : "RR";
+      if (typeof x === "string") return "CharSequence";
+      if (Array.isArray(x)) return "Sequence";
+      if (x instanceof AxiomaMap) return "Mapping";
+      if (x instanceof AxiomaSet) return "Set";
+      if (x instanceof AxiomaInstance) return x.structClass.node.name;
+      return typeof x;
+    });
+    def("is_null", (x) => x === null || x === undefined);
+    def("contains", (coll, item) => {
+      if (Array.isArray(coll)) return coll.some(x => axiomaEq(x, item));
+      if (coll instanceof AxiomaSet) return coll.has(item);
+      if (coll instanceof AxiomaMap) return coll.has(item);
+      if (typeof coll === "string") return coll.includes(item);
+      throw new AxiomaError(`contains() cannot test membership on ${axiomaRepr(coll)}`);
+    });
+    def("sup", (seq) => { const a = self._toIterable(seq); return a.reduce((m, x) => x > m ? x : m); });
+    def("inf", (seq) => { const a = self._toIterable(seq); return a.reduce((m, x) => x < m ? x : m); });
+    def("sort", (seq) => [...self._toIterable(seq)].sort((a, b) => a < b ? -1 : a > b ? 1 : 0));
+    def("reverse", (seq) => [...self._toIterable(seq)].reverse());
+    def("round", (x, n = 0) => { const f = Math.pow(10, n); return Math.round(x * f) / f; });
+    def("apply", (fn, seq) => self._toIterable(seq).map(x => callFn(fn, [x])));
+    def("select", (fn, seq) => self._toIterable(seq).filter(x => self._truthy(callFn(fn, [x]))));
+    def("fold", (fn, acc, seq) => { for (const x of self._toIterable(seq)) acc = callFn(fn, [acc, x]); return acc; });
+    def("exists", (seq, fn) => self._toIterable(seq).some(x => self._truthy(callFn(fn, [x]))));
+    def("forall", (seq, fn) => self._toIterable(seq).every(x => self._truthy(callFn(fn, [x]))));
+    def("sum", (fn, start, end, step = 1) => { let t = 0; for (let n = start; n <= end; n += step) t += callFn(fn, [n]); return t; });
+    def("prod", (fn, start, end, step = 1) => { let t = 1; for (let n = start; n <= end; n += step) t *= callFn(fn, [n]); return t; });
+    def("deriv", (fn, x, h = 1e-7) => (callFn(fn, [x + h]) - callFn(fn, [x - h])) / (2 * h));
+    def("integ", (fn, a, b, n = 1000) => {
+      if (n % 2 !== 0) n += 1;
+      const h = (b - a) / n; let total = callFn(fn, [a]) + callFn(fn, [b]);
+      for (let i = 1; i < n; i++) total += (i % 2 !== 0 ? 4 : 2) * callFn(fn, [a + i * h]);
+      return (h / 3) * total;
+    });
+    def("ZZ", (x) => Math.trunc(Number(x)));
+    def("RR", (x) => Number(x));
+    def("Bool", (x) => self._truthy(x));
+    def("String", (x) => axiomaStr(x));
+    def("Sequence", (...a) => a);
+    def("Set", (...a) => new AxiomaSet(a));
+    def("Mapping", () => new AxiomaMap());
+    def("hash", (x) => JSON.stringify(x));
+    def("identity", (x) => x);
+    def("is_function", (x) => x instanceof AxiomaFunction || x instanceof AxiomaLambda || x instanceof NativeFn);
+    map.set("PI", Math.PI); map.set("E", Math.E); map.set("Null", null); map.set("T", true); map.set("F", false);
+    return map;
+  }
+}
+
+global.AxiomaInterpreter = {
+  Interpreter, Environment, AxiomaError, AxiomaSet, AxiomaMap, AxiomaInstance, AxiomaStructClass,
+  AxiomaFunction, AxiomaLambda, axiomaStr, axiomaRepr,
+};
+
+})(typeof window !== "undefined" ? window : global);
+
+/* ====================== /AXIOMA ENGINE ====================== */
+</script>
+<script>
+window.__AXIOMA_EXAMPLES__ = [
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "Linked list (Node, next)",
+  src: `-- Simple linked list using a structure with a 'next' reference
+structure Node :=
+  property value
+  property next := Null
+
+  create(v) begin
+    this'value := v
+  end
+end
+
+let head := Node(1)
+head'next := Node(2)
+head'next'next := Node(3)
+
+let cur := head
+repeat begin
+  out(cur'value)
+  cur := cur'next
+end until is_null(cur)
+`
+},
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "Binary tree (TreeNode, left/right)",
+  src: `-- Binary search tree built with TDA structures
+structure TreeNode :=
+  property value
+  property left  := Null
+  property right := Null
+
+  create(v) begin
+    this'value := v
+  end
+
+  where insert(v) begin
+    given v < this'value:
+      case T ->
+        given is_null(this'left):
+          case T -> this'left := TreeNode(v)
+          otherwise -> this'left'insert(v)
+      otherwise ->
+        given is_null(this'right):
+          case T -> this'right := TreeNode(v)
+          otherwise -> this'right'insert(v)
+  end
+
+  where inorder() begin
+    given is_null(this'left):
+      case F -> this'left'inorder()
+    out(this'value)
+    given is_null(this'right):
+      case F -> this'right'inorder()
+  end
+end
+
+let root := TreeNode(5)
+root'insert(3)
+root'insert(8)
+root'insert(1)
+root'insert(4)
+root'inorder()
+`
+},
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "Graph (adjacency list)",
+  src: `-- Undirected graph represented with a Mapping (adjacency list)
+structure Graph :=
+  property adj := Mapping()
+
+  where add_edge(a, b) begin
+    given contains(this'adj, a):
+      case F -> this'adj[a] := []
+    given contains(this'adj, b):
+      case F -> this'adj[b] := []
+    this'adj[a] := this'adj[a] + [b]
+    this'adj[b] := this'adj[b] + [a]
+  end
+end
+
+let g := Graph()
+g'add_edge(1, 2)
+g'add_edge(1, 3)
+g'add_edge(2, 3)
+out(g'adj)
+`
+},
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "static and fixed fields (TDA)",
+  src: `-- 'static property' is shared across every instance.
+-- 'fixed property' can only be assigned during create().
+structure Counter :=
+  static property count := 0
+
+  create() begin
+    Counter'count := Counter'count + 1
+  end
+end
+
+let a := Counter()
+let b := Counter()
+let c := Counter()
+out(s"instances created: {Counter'count}")
+
+structure Point(immutable) :=
+  fixed property x
+  fixed property y
+
+  create(px, py) begin
+    this'x := px
+    this'y := py
+  end
+end
+
+let p := Point(3, 4)
+out(p'x)
+check begin
+  p'x := 99
+end
+catch as e begin
+  out(s"caught: {e}")
+end
+`
+},
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "Typed exceptions (structure + abort/catch)",
+  src: `-- A structure can act as its own exception type,
+-- catchable by name with 'catch Type as e'.
+structure OutOfRange :=
+  property index
+  create(i) begin this'index := i end
+end
+
+where safe_get(seq, i) begin
+  given i < 0 || i >= #seq:
+    case T -> abort OutOfRange(i)
+  report seq[i]
+end
+
+check begin
+  out(safe_get([1, 2, 3], 10))
+end
+catch OutOfRange as e begin
+  out(s"index {e'index} is out of range")
+end
+`
+},
+{
+  category: "Advanced (ADTs, nodes, errors)", label: "Fibonacci and lambdas",
+  src: `where fib(n) begin
+  given n < 2:
+    case T -> report n
+  report fib(n - 1) + fib(n - 2)
+end
+
+each i in {0..9} begin
+  out(s"fib({i}) = {fib(i)}")
+end
+
+let doubled := apply(fn(x) => x * 2, [1, 2, 3, 4, 5])
+out(doubled)
+
+let evens := [x | x in {1..10}, x % 2 === 0]
+out(evens)
+`
+},
+];
+const BASIC_EXAMPLES = [
+{
+  category: "Basics", label: "Hello World",
+  src: `-- Your first Axioma program
+out("Hello, Axioma!")
+`
+},
+{
+  category: "Basics", label: "Variables and types",
+  src: `-- 'let' declares a variable. ':=' assigns a value.
+let x := 10
+let pi : RR := 3.14159
+let name := "Axioma"
+
+out(x)
+out(pi)
+out(name)
+
+-- Compound assignment operators
+x += 5
+out(x)   -- 15
+`
+},
+{
+  category: "Basics", label: "Arithmetic operators",
+  src: `let a := 17
+let b := 3
+
+out(a + b)    -- addition: 20
+out(a - b)    -- subtraction: 14
+out(a * b)    -- multiplication: 51
+out(a / b)    -- division: 5.666...
+out(a // b)   -- integer division: 5
+out(a % b)    -- modulo: 2
+out(a ** 2)   -- power: 289
+`
+},
+{
+  category: "Basics", label: "Conditionals (let / given / otherwise)",
+  src: `-- Axioma doesn't use 'if': it uses 'let <condition> begin ... end'
+let age := 20
+
+let age >= 18 begin
+  out("you're an adult")
+end given age >= 13 begin
+  out("you're a teenager")
+end otherwise begin
+  out("you're a child")
+end
+`
+},
+{
+  category: "Basics", label: "each loop (iterate over a sequence)",
+  src: `each i in {1..5} begin
+  out(s"i = {i}")
+end
+
+-- also works over lists
+each fruit in ["apple", "pear", "grape"] begin
+  out(fruit)
+end
+`
+},
+{
+  category: "Basics", label: "repeat...until loop",
+  src: `let counter := 0
+
+repeat begin
+  out(s"counter = {counter}")
+  counter += 1
+end until counter === 5
+`
+},
+{
+  category: "Basics", label: "Pattern matching (given/case)",
+  src: `where describe(n) begin
+  given n:
+    case 0 -> report "zero"
+    case 1 -> report "one"
+    case 2 -> report "two"
+    otherwise -> report "many"
+end
+
+each n in {0..3} begin
+  out(describe(n))
+end
+`
+},
+{
+  category: "Basics", label: "Functions (where)",
+  src: `where rectangle_area(width, height) begin
+  report width * height
+end
+
+where greet(name := "friend") begin
+  -- parameters can have a default value
+  report s"Hello, {name}!"
+end
+
+out(rectangle_area(4, 5))
+out(greet())
+out(greet("Mothie"))
+`
+},
+{
+  category: "Basics", label: "Lambdas and apply/select/fold",
+  src: `let double := fn(x) => x * 2
+let is_even := fn(x) => x % 2 === 0
+
+let numbers := [1, 2, 3, 4, 5, 6]
+
+out(apply(double, numbers))       -- applies to each element
+out(select(is_even, numbers))     -- filters
+out(fold(fn(a, b) => a + b, 0, numbers))  -- total sum
+`
+},
+{
+  category: "Basics", label: "Lists, sets, and maps",
+  src: `let list := [1, 2, 3]
+let set := {1, 2, 2, 3}            -- duplicates are ignored
+let map := {"name": "Axioma", "version": 1}
+
+out(list)
+out(set)
+out(map)
+out(#list)                -- length: 3
+out(list + [4, 5])        -- concatenate: [1,2,3,4,5]
+out(map["name"])          -- access by key
+
+-- list comprehension
+let squares := [x * x | x in {1..5}]
+out(squares)
+`
+},
+];
+window.__AXIOMA_EXAMPLES__ = BASIC_EXAMPLES.concat(window.__AXIOMA_EXAMPLES__);
+
+</script>
+<script>
+/* ====================== IDE UI ====================== */
+(function () {
+  "use strict";
+  const { Interpreter, AxiomaError } = window.AxiomaInterpreter;
+  const { LexerError } = window.AxiomaLexer;
+  const { ParseError } = window.AxiomaParser;
+
+  // ---- CodeMirror "simple mode" for Axioma -----------------------------
+  const KW = [...window.AxiomaLexer.KEYWORDS];
+  const STRUCT_WORDS = ["structure", "where", "let", "create"];
+  CodeMirror.defineSimpleMode("axioma", {
+    start: [
+      { regex: /--.*/, token: "ax-comment" },
+      { regex: /s?"(?:[^"\\]|\\.)*"/, token: "ax-string" },
+      { regex: /\b(T|F|Null)\b/, token: "ax-bool" },
+      { regex: /\b\d+(\.\d+)?\b/, token: "ax-number" },
+      { regex: /\b(structure|where|create|let)\b/, token: "ax-struct" },
+      { regex: new RegExp("\\b(" + KW.filter(k => !STRUCT_WORDS.includes(k)).join("|") + ")\\b"), token: "ax-keyword" },
+      { regex: /(:=|->|=>|===|=!=|<=|>=|&&|\|\||!!|\*\*|\/\/|\+=|-=|\*=|\/=|::)/, token: "ax-op" },
+      { regex: /['#@?]/, token: "ax-op" },
+    ],
+  });
+
+  // ---- Editor ------------------------------------------------------------
+  const DEFAULT_SRC = `-- Welcome to Axioma
+-- Linked list: a minimal ADT (Abstract Data Type) example
+
+structure Node :=
+  property value
+  property next := Null
+
+  create(v) begin
+    this'value := v
+  end
+end
+
+let head := Node(1)
+head'next := Node(2)
+head'next'next := Node(3)
+
+let cur := head
+repeat begin
+  out(cur'value)
+  cur := cur'next
+end until is_null(cur)
+`;
+
+  const cm = CodeMirror(document.getElementById("editor-host"), {
+    value: DEFAULT_SRC,
+    mode: "axioma",
+    theme: "default",
+    lineNumbers: true,
+    indentUnit: 2,
+    tabSize: 2,
+    indentWithTabs: false,
+    viewportMargin: Infinity,
+    extraKeys: { "Ctrl-Enter": run, "Cmd-Enter": run, "Tab": (cm) => cm.replaceSelection("  ") },
+  });
+  cm.on("cursorActivity", () => {
+    const c = cm.getCursor();
+    document.getElementById("pos").textContent = `${c.line + 1}:${c.ch + 1}`;
+  });
+
+  // ---- Console -------------------------------------------------------
+  const consoleEl = document.getElementById("console");
+  const statusDot = document.getElementById("status-dot");
+  const statusText = document.getElementById("status-text");
+  function clearConsole() { consoleEl.innerHTML = ""; }
+  function printLine(text, cls) {
+    const div = document.createElement("div");
+    div.className = "line" + (cls ? " " + cls : "");
+    div.textContent = text;
+    consoleEl.appendChild(div);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+  function setStatus(mode, label) {
+    statusDot.className = "dot" + (mode ? " " + mode : "");
+    statusText.textContent = label;
+  }
+
+  // ---- Run -------------------------------------------------------------
+  const runBtn = document.getElementById("btn-run");
+  function run() {
+    const src = cm.getValue();
+    clearConsole();
+    setStatus("run", "running…");
+    runBtn.disabled = true;
+    // Let the UI paint "running…" before the (synchronous) run blocks the thread.
+    setTimeout(() => {
+      const t0 = performance.now();
+      try {
+        const interp = new Interpreter({ out: (s) => printLine(s) });
+        interp.run(src);
+        const ms = (performance.now() - t0).toFixed(1);
+        setStatus("ok", `done in ${ms} ms`);
+      } catch (e) {
+        if (e instanceof LexerError || e instanceof ParseError) {
+          printLine(e.message, "err");
+        } else if (e instanceof AxiomaError) {
+          printLine(e.toString(), "err");
+        } else {
+          printLine(`Internal error: ${e.message || e}`, "err");
+        }
+        setStatus("err", "error");
+      } finally {
+        runBtn.disabled = false;
+      }
+    }, 10);
+  }
+  runBtn.addEventListener("click", run);
+
+  // ---- Load / Save .axm --------------------------------------------
+  const fileInput = document.getElementById("file-input");
+  document.getElementById("btn-load").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    if (!f.name.endsWith(".axm")) {
+      printLine(`"${f.name}" does not have the .axm extension — Axioma expects .axm files.`, "err");
+      fileInput.value = ""; return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => { cm.setValue(reader.result); printLine(`Loaded: ${f.name}`, "hint"); };
+    reader.readAsText(f);
+    fileInput.value = "";
+  });
+  document.getElementById("btn-save").addEventListener("click", () => {
+    const blob = new Blob([cm.getValue()], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "programa.axm";
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // ---- Theme toggle ------------------------------------------------
+  const themeBtn = document.getElementById("btn-theme");
+  themeBtn.addEventListener("click", () => {
+    const root = document.documentElement;
+    const cur = root.getAttribute("data-theme");
+    if (cur === "dark") { root.setAttribute("data-theme", "light"); themeBtn.textContent = "☀"; }
+    else { root.setAttribute("data-theme", "dark"); themeBtn.textContent = "☾"; }
+  });
+
+  // ---- Examples ------------------------------------------------------
+  const EXAMPLES = window.__AXIOMA_EXAMPLES__;
+  const sel = document.getElementById("examples");
+  const optDefault = document.createElement("option");
+  optDefault.textContent = "Examples…"; optDefault.value = "";
+  sel.appendChild(optDefault);
+  const groups = {};
+  EXAMPLES.forEach((ex, i) => {
+    const cat = ex.category || "Examples";
+    if (!groups[cat]) { groups[cat] = document.createElement("optgroup"); groups[cat].label = cat; sel.appendChild(groups[cat]); }
+    const opt = document.createElement("option");
+    opt.value = i; opt.textContent = ex.label;
+    groups[cat].appendChild(opt);
+  });
+  sel.addEventListener("change", () => {
+    if (sel.value === "") return;
+    cm.setValue(EXAMPLES[+sel.value].src);
+    sel.value = "";
+  });
+
+  printLine("Axioma IDE ready. Press Run or " + (navigator.platform.includes("Mac") ? "⌘" : "Ctrl") + "+Enter.", "hint");
+})();
+</script>
+</body>
+</html>

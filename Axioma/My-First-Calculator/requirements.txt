@@ -1,0 +1,4 @@
+customtkinter>=5.2
+pyinstaller>=6.0
+pybind11>=2.12
+setuptools>=75.0

@@ -1,0 +1,29 @@
+# Entorno virtual
+venv/
+env/
+
+# Artefactos de build de PyInstaller
+build/
+dist/
+*.spec.bak
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Build artifacts del evaluador C++
+build/
+*.pyd
+*.so
+*.dll
+*.obj
+*.o
+*.lib
+*.exp
+*.egg-info/
+*.egg
+
+# Editores
+.vscode/
+.idea/

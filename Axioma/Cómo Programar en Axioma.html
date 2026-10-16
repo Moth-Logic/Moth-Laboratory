@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cómo Programar en Axioma</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fbf9f4; --paper: #ffffff; --ink: #211e18; --ink-dim: #6b6558;
+  --rule: #ddd6c4; --gold: #9a6c1f; --gold-soft: #f1e6cd;
+  --code-bg: #f4f0e4; --teal: #2d7d77; --red: #a6392f;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --serif: 'Source Serif 4', Georgia, serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15161a; --paper: #1b1c21; --ink: #e8e5da; --ink-dim: #9b968a;
+    --rule: #34353c; --gold: #d8ad5f; --gold-soft: #2a2416;
+    --code-bg: #212229; --teal: #6fd0c8; --red: #e37a71;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15161a; --paper: #1b1c21; --ink: #e8e5da; --ink-dim: #9b968a;
+  --rule: #34353c; --gold: #d8ad5f; --gold-soft: #2a2416;
+  --code-bg: #212229; --teal: #6fd0c8; --red: #e37a71;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--serif); font-size: 17px; line-height: 1.65;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.page { max-width: 780px; margin: 0 auto; padding: 56px 24px 100px; }
+.masthead { text-align: center; margin-bottom: 64px; padding-bottom: 36px; border-bottom: 1px solid var(--rule); }
+.masthead .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--gold); }
+.masthead h1 { font-size: 44px; font-weight: 600; font-style: italic; margin: 10px 0 8px; }
+.masthead p { color: var(--ink-dim); font-size: 16px; max-width: 520px; margin: 0 auto; }
+.theme-toggle {
+  position: fixed; top: 18px; right: 18px; font-family: var(--mono); font-size: 12px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; color: var(--ink);
+  padding: 6px 11px; cursor: pointer;
+}
+nav.toc { background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 22px 28px; margin-bottom: 56px; }
+nav.toc h2 { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-dim); margin: 0 0 12px; font-weight: 500;}
+nav.toc ol { margin: 0; padding-left: 22px; columns: 2; column-gap: 28px; }
+nav.toc li { margin-bottom: 7px; font-size: 14.5px; break-inside: avoid; }
+nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
+nav.toc a:hover { border-color: var(--gold); }
+
+section { margin-bottom: 58px; }
+h2 { font-size: 28px; font-weight: 600; margin: 0 0 6px; border-bottom: 2px solid var(--gold); padding-bottom: 10px; }
+h2 .num { color: var(--gold); font-style: italic; margin-right: 10px; }
+h3 { font-size: 20px; font-weight: 600; margin: 32px 0 10px; }
+h4 { font-family: var(--mono); font-size: 13px; letter-spacing: .03em; text-transform: uppercase; color: var(--ink-dim); margin: 22px 0 8px; font-weight: 500; }
+p { margin: 12px 0; }
+ul, ol { padding-left: 24px; }
+li { margin: 5px 0; }
+a { color: var(--teal); }
+strong { font-weight: 600; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+pre {
+  background: var(--code-bg); border: 1px solid var(--rule); border-left: 3px solid var(--gold);
+  border-radius: 3px; padding: 16px 18px; overflow-x: auto; font-family: var(--mono);
+  font-size: 13.5px; line-height: 1.6; margin: 14px 0;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+.kw { color: var(--gold); } .str { color: var(--teal); } .cm { color: var(--ink-dim); font-style: italic; }
+
+.grammar { background: var(--code-bg); border: 1px solid var(--rule); border-radius: 3px; padding: 16px 18px; font-family: var(--mono); font-size: 13px; overflow-x: auto; }
+.grammar .rule { margin: 3px 0; }
+.grammar .nt { color: var(--gold); }
+.grammar .lit { color: var(--teal); }
+
+table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 15px; }
+th, td { border: 1px solid var(--rule); padding: 8px 12px; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+td code { white-space: nowrap; }
+
+.callout { border: 1px solid var(--rule); border-left: 3px solid var(--teal); background: var(--gold-soft); border-radius: 3px; padding: 14px 18px; margin: 16px 0; font-size: 15px; }
+.callout.warn { border-left-color: var(--red); }
+.callout .label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-dim); display:block; margin-bottom: 4px; }
+
+footer { text-align: center; color: var(--ink-dim); font-size: 13px; padding-top: 30px; border-top: 1px solid var(--rule); }
+
+@media print {
+  @page { margin: 2cm 1.8cm; }
+  .theme-toggle { display: none; }
+  body { background: #fff; color: #111; font-size: 11.5pt; }
+  :root { --paper:#fff; --ink:#111; --ink-dim:#555; --rule:#ccc; --code-bg:#f4f4f0; --gold:#7a5718; --teal:#1f5d58; --red:#7a2a22; }
+  .page { max-width: none; padding: 0; }
+  a { color: inherit; text-decoration: underline; }
+  nav.toc { break-inside: avoid; }
+  section { break-inside: avoid-page; margin-bottom: 26px; }
+  h2 { break-before: page; }
+  section:first-of-type h2 { break-before: avoid; }
+  pre, table, .grammar, .callout { break-inside: avoid; }
+  .masthead { break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="theme-toggle">☾ tema</button>
+<div class="page">
+
+<div class="masthead">
+  <div class="eyebrow">MANUAL DE REFERENCIA</div>
+  <h1>Cómo Programar en Axioma</h1>
+  <p>Guía formal del lenguaje: sintaxis, tipos de datos abstractos, estructuras enlazadas y manejo de errores. Extensión de archivo: <code>.axm</code></p>
+</div>
+
+<nav class="toc">
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#inicio">Primeros pasos</a></li>
+    <li><a href="#lexico">Léxico y literales</a></li>
+    <li><a href="#variables">Variables y tipos</a></li>
+    <li><a href="#operadores">Operadores</a></li>
+    <li><a href="#control">Control de flujo</a></li>
+    <li><a href="#funciones">Funciones y lambdas</a></li>
+    <li><a href="#colecciones">Colecciones</a></li>
+    <li><a href="#tda">Tipos de Datos Abstractos</a></li>
+    <li><a href="#nodos">Nodos, referencias y punteros</a></li>
+    <li><a href="#errores">Manejo de errores</a></li>
+    <li><a href="#gramatica">Especificación formal (EBNF)</a></li>
+    <li><a href="#builtins">Funciones integradas</a></li>
+  </ol>
+</nav>
+
+<section id="inicio">
+  <h2><span class="num">01</span>Primeros pasos</h2>
+  <p>Un programa Axioma se guarda con la extensión <code>.axm</code> y se ejecuta con el intérprete de referencia:</p>
+  <pre><code>python3 run_axioma.py programa.axm
+python3 run_axioma.py &lt; programa.axm   <span class="cm">-- también acepta stdin</span></code></pre>
+  <p>El runner valida la extensión: un archivo <code>.ax</code> (el formato histórico) será rechazado con un mensaje que indica renombrarlo a <code>.axm</code>.</p>
+  <pre><code><span class="cm">-- hola_mundo.axm</span>
+out(<span class="str">"¡Hola, Axioma!"</span>)</code></pre>
+</section>
+
+<section id="lexico">
+  <h2><span class="num">02</span>Léxico y literales</h2>
+  <table>
+    <tr><th>Forma</th><th>Ejemplo</th><th>Notas</th></tr>
+    <tr><td>Comentario</td><td><code>-- texto</code></td><td>hasta el fin de línea</td></tr>
+    <tr><td>Entero</td><td><code>42</code>, <code>1_000</code></td><td>el guion bajo se ignora</td></tr>
+    <tr><td>Real</td><td><code>3.14159</code></td><td></td></tr>
+    <tr><td>Booleano</td><td><code>T</code> / <code>F</code></td><td>true / false</td></tr>
+    <tr><td>Nulo</td><td><code>Null</code></td><td>ausencia de valor</td></tr>
+    <tr><td>Cadena</td><td><code>"texto"</code></td><td>sin interpolación</td></tr>
+    <tr><td>Cadena interpolada</td><td><code>s"x = {x}"</code></td><td>evalúa expresiones entre <code>{}</code></td></tr>
+  </table>
+  <p>Conjuntos numéricos reservados (también usables como constructores): <code>NN</code>, <code>ZZ</code>, <code>QQ</code>, <code>RR</code>, <code>CC</code>, <code>ii</code>.</p>
+</section>
+
+<section id="variables">
+  <h2><span class="num">03</span>Variables y tipos</h2>
+  <pre><code><span class="kw">let</span> x := 10
+<span class="kw">let</span> pi : RR := 3.14159        <span class="cm">-- con anotación de tipo</span>
+<span class="kw">let</span> n :: ZZ                  <span class="cm">-- declara el dominio sin inicializar</span>
+x += 5
+x -= 1
+x *= 2
+x /= 3</code></pre>
+  <p>Axioma no tiene <code>if</code> clásico; la forma condicional usa <code>let &lt;condición&gt; begin ... end</code>, encadenable con <code>given</code> (elif) y <code>otherwise</code> (else):</p>
+  <pre><code><span class="kw">let</span> x > 5 <span class="kw">begin</span>
+  out(<span class="str">"x es mayor que 5"</span>)
+<span class="kw">end</span> <span class="kw">given</span> x > 0 <span class="kw">begin</span>
+  out(<span class="str">"x es positivo"</span>)
+<span class="kw">end</span> <span class="kw">otherwise</span> <span class="kw">begin</span>
+  out(<span class="str">"x es cero o negativo"</span>)
+<span class="kw">end</span></code></pre>
+</section>
+
+<section id="operadores">
+  <h2><span class="num">04</span>Operadores</h2>
+  <table>
+    <tr><th>Categoría</th><th>Operadores</th></tr>
+    <tr><td>Aritméticos</td><td><code>+ - * / // % **</code></td></tr>
+    <tr><td>Comparación</td><td><code>=== =!= &lt; &gt; &lt;= &gt;=</code></td></tr>
+    <tr><td>Lógicos</td><td><code>&amp;&amp; || !!</code></td></tr>
+    <tr><td>Bit a bit</td><td><code>&amp; | ^ &lt;&lt; &gt;&gt;</code></td></tr>
+    <tr><td>Conjuntos</td><td><code>union intersect exclude cart</code></td></tr>
+    <tr><td>Longitud</td><td><code>#coleccion</code></td></tr>
+    <tr><td>Proyección / referencia</td><td><code>obj'campo</code>, <code>obj'metodo(...)</code></td></tr>
+  </table>
+  <p>Precedencia (de menor a mayor): ternario → <code>||</code> → <code>&amp;&amp;</code> → <code>!!</code> → comparación → operadores de conjunto → aditivos → multiplicativos → potencia → unario → postfijo (llamada, proyección, índice).</p>
+</section>
+
+<section id="control">
+  <h2><span class="num">05</span>Control de flujo</h2>
+  <h3>Bucle <code>each</code></h3>
+  <pre><code><span class="kw">each</span> i <span class="kw">in</span> {1..5} <span class="kw">begin</span>
+  out(s<span class="str">"i = {i}"</span>)
+<span class="kw">end</span></code></pre>
+  <h3>Bucle <code>repeat ... until</code></h3>
+  <pre><code><span class="kw">let</span> count := 0
+<span class="kw">repeat</span> <span class="kw">begin</span>
+  count += 1
+<span class="kw">end</span> <span class="kw">until</span> count === 3</code></pre>
+  <h3>Comparación por patrones: <code>given ... case</code></h3>
+  <p>Distinto del <code>given</code> usado como <em>elif</em>: cuando va seguido de dos puntos (<code>:</code>), es una comparación por patrones contra un valor concreto.</p>
+  <pre><code><span class="kw">given</span> n:
+  <span class="kw">case</span> 1 -> out(<span class="str">"uno"</span>)
+  <span class="kw">case</span> 2 -> out(<span class="str">"dos"</span>)
+  <span class="kw">otherwise</span> -> out(<span class="str">"otro"</span>)</code></pre>
+  <p>Cada brazo acepta un bloque <code>begin...end</code> o una sola sentencia, incluso en la línea siguiente — útil para anidar otro <code>given</code>:</p>
+  <pre><code><span class="kw">given</span> is_null(nodo):
+  <span class="kw">case</span> T ->
+    out(<span class="str">"vacío"</span>)
+  <span class="kw">otherwise</span> ->
+    out(nodo'valor)</code></pre>
+  <p><code>stop</code> termina el bucle actual; <code>next</code> salta a la siguiente iteración; <code>skip</code> no hace nada.</p>
+</section>
+
+<section id="funciones">
+  <h2><span class="num">06</span>Funciones y lambdas</h2>
+  <pre><code><span class="kw">where</span> cuadrado(x) <span class="kw">begin</span>
+  <span class="kw">report</span> x * x
+<span class="kw">end</span>
+
+<span class="kw">let</span> doble := fn(x) => x * 2
+out(doble(21))             <span class="cm">-- 42</span>
+out(apply(doble, [1,2,3])) <span class="cm">-- [2, 4, 6]</span></code></pre>
+  <p>Los parámetros admiten valores por defecto (<code>nombre := valor</code>) y variádicos (<code>...nombre</code>).</p>
+</section>
+
+<section id="colecciones">
+  <h2><span class="num">07</span>Colecciones</h2>
+  <table>
+    <tr><th>Tipo</th><th>Literal</th><th>Ejemplo</th></tr>
+    <tr><td>Sequence</td><td><code>[...]</code></td><td><code>[1, 2, 3]</code></td></tr>
+    <tr><td>Set</td><td><code>{...}</code></td><td><code>{1, 2, 3}</code></td></tr>
+    <tr><td>Mapping</td><td><code>{k: v, ...}</code></td><td><code>{"a": 1, "b": 2}</code></td></tr>
+    <tr><td>Rango</td><td><code>{a..b}</code></td><td><code>{1..5}</code> → <code>[1,2,3,4,5]</code></td></tr>
+  </table>
+  <p>Comprensiones (lista, conjunto) y rebanado:</p>
+  <pre><code><span class="kw">let</span> pares := [x | x <span class="kw">in</span> {1..10}, x % 2 === 0]
+<span class="kw">let</span> cuadrados := {x * x | x <span class="kw">in</span> {1..5}}
+<span class="kw">let</span> sub := lista[0..2]           <span class="cm">-- rebanado</span>
+<span class="kw">let</span> sub2 := lista[0..8 by 2]     <span class="cm">-- con paso</span></code></pre>
+</section>
+
+<section id="tda">
+  <h2><span class="num">08</span>Tipos de Datos Abstractos</h2>
+  <p>Una <code>structure</code> define un TDA con campos (<code>property</code>), un inicializador (<code>create</code>) y métodos (<code>where</code>):</p>
+  <pre><code><span class="kw">structure</span> Punto :=
+  property x
+  property y
+
+  create(px, py) <span class="kw">begin</span>
+    this'x := px
+    this'y := py
+  <span class="kw">end</span>
+
+  <span class="kw">where</span> distancia() <span class="kw">begin</span>
+    <span class="kw">report</span> ((this'x ** 2) + (this'y ** 2)) ** 0.5
+  <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">let</span> p := Punto(3, 4)
+out(p'distancia())   <span class="cm">-- 5</span></code></pre>
+
+  <h4>Campos con valor por defecto</h4>
+  <pre><code><span class="kw">structure</span> Nodo :=
+  property valor
+  property siguiente := Null   <span class="cm">-- se inicializa antes de create()</span>
+<span class="kw">end</span></code></pre>
+
+  <h4>Campos <code>static</code> (compartidos entre instancias)</h4>
+  <pre><code><span class="kw">structure</span> Contador :=
+  static property total := 0
+  create() <span class="kw">begin</span>
+    Contador'total := Contador'total + 1
+  <span class="kw">end</span>
+<span class="kw">end</span>
+
+Contador(); Contador(); Contador()
+out(Contador'total)   <span class="cm">-- 3 — se accede por el nombre de la clase o por cualquier instancia</span></code></pre>
+
+  <h4>Campos <code>fixed</code> / <code>immutable</code> (de solo asignación inicial)</h4>
+  <p>Pueden escribirse durante <code>create()</code>, pero quedan bloqueados después. Reasignarlos lanza un error capturable:</p>
+  <pre><code><span class="kw">structure</span> Punto(immutable) :=
+  fixed property x
+  fixed property y
+  create(px, py) <span class="kw">begin</span> this'x := px; this'y := py <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">let</span> p := Punto(3, 4)
+<span class="kw">check</span> <span class="kw">begin</span>
+  p'x := 99
+<span class="kw">end</span>
+<span class="kw">catch</span> <span class="kw">as</span> e <span class="kw">begin</span>
+  out(s<span class="str">"capturado: {e}"</span>)   <span class="cm">-- Cannot reassign 'x' — declared 'fixed' ...</span>
+<span class="kw">end</span></code></pre>
+
+  <div class="callout">
+    <span class="label">Nota de diseño</span>
+    Un nombre de campo puede coincidir con una palabra reservada (<code>next</code>, <code>prev</code>, <code>type</code>…) siempre que se declare con <code>property</code>: <code>property next := Null</code>. Esto es intencional — son justamente los nombres más naturales para nodos enlazados.
+  </div>
+</section>
+
+<section id="nodos">
+  <h2><span class="num">09</span>Nodos, referencias y punteros</h2>
+  <p>Una instancia de <code>structure</code> es un <strong>tipo de referencia</strong>: asignarla a una variable, o a un campo de otra instancia, no la copia — comparte el mismo objeto en memoria. Por eso <code>nodo'siguiente := otroNodo</code> ya crea el enlace, sin sintaxis adicional de punteros.</p>
+
+  <h3>Lista enlazada</h3>
+  <pre><code><span class="kw">structure</span> Nodo :=
+  property valor
+  property siguiente := Null
+  create(v) <span class="kw">begin</span> this'valor := v <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">let</span> cabeza := Nodo(1)
+cabeza'siguiente := Nodo(2)
+cabeza'siguiente'siguiente := Nodo(3)
+
+<span class="kw">let</span> cur := cabeza
+<span class="kw">repeat</span> <span class="kw">begin</span>
+  out(cur'valor)
+  cur := cur'siguiente
+<span class="kw">end</span> <span class="kw">until</span> is_null(cur)</code></pre>
+
+  <h3>Dereferenciación segura</h3>
+  <p><code>is_null(x)</code> comprueba si una referencia es <code>Null</code> antes de proyectar un campo. Proyectar sobre <code>Null</code> directamente produce un error claro y capturable (<code>check</code>/<code>catch</code>) en vez de un fallo interno.</p>
+
+  <h3>Árbol binario</h3>
+  <pre><code><span class="kw">structure</span> NodoArbol :=
+  property valor
+  property izq := Null
+  property der := Null
+  create(v) <span class="kw">begin</span> this'valor := v <span class="kw">end</span>
+
+  <span class="kw">where</span> insertar(v) <span class="kw">begin</span>
+    <span class="kw">given</span> v &lt; this'valor:
+      <span class="kw">case</span> T ->
+        <span class="kw">given</span> is_null(this'izq):
+          <span class="kw">case</span> T -> this'izq := NodoArbol(v)
+          <span class="kw">otherwise</span> -> this'izq'insertar(v)
+      <span class="kw">otherwise</span> ->
+        <span class="kw">given</span> is_null(this'der):
+          <span class="kw">case</span> T -> this'der := NodoArbol(v)
+          <span class="kw">otherwise</span> -> this'der'insertar(v)
+  <span class="kw">end</span>
+<span class="kw">end</span></code></pre>
+
+  <h3>Grafo (lista de adyacencia)</h3>
+  <pre><code><span class="kw">structure</span> Grafo :=
+  property adj := Mapping()
+  <span class="kw">where</span> agregar_arista(a, b) <span class="kw">begin</span>
+    <span class="kw">given</span> contains(this'adj, a):
+      <span class="kw">case</span> F -> this'adj[a] := []
+    <span class="kw">given</span> contains(this'adj, b):
+      <span class="kw">case</span> F -> this'adj[b] := []
+    this'adj[a] := this'adj[a] + [b]
+    this'adj[b] := this'adj[b] + [a]
+  <span class="kw">end</span>
+<span class="kw">end</span></code></pre>
+  <p><code>contains(coleccion, elemento)</code> prueba pertenencia en <code>Sequence</code>, <code>Set</code> o las llaves de un <code>Mapping</code> — Axioma no tiene un operador infijo <code>in</code> fuera de <code>each</code> y las comprensiones.</p>
+</section>
+
+<section id="errores">
+  <h2><span class="num">10</span>Manejo de errores</h2>
+  <pre><code><span class="kw">check</span> <span class="kw">begin</span>
+  abort <span class="str">"algo salió mal"</span>
+<span class="kw">end</span>
+<span class="kw">catch</span> Error <span class="kw">as</span> e <span class="kw">begin</span>
+  out(s<span class="str">"capturado: {e}"</span>)
+<span class="kw">end</span>
+<span class="kw">always</span> <span class="kw">begin</span>
+  out(<span class="str">"limpieza ejecutada"</span>)
+<span class="kw">end</span></code></pre>
+  <p><code>abort "texto"</code> es de tipo genérico <code>Error</code>. Para excepciones propias y tipadas, usa una <code>structure</code> como "clase de error" — se captura por su nombre:</p>
+  <pre><code><span class="kw">structure</span> FueraDeRango :=
+  property indice
+  create(i) <span class="kw">begin</span> this'indice := i <span class="kw">end</span>
+<span class="kw">end</span>
+
+<span class="kw">where</span> obtener_seguro(seq, i) <span class="kw">begin</span>
+  <span class="kw">given</span> i &lt; 0 || i >= #seq:
+    <span class="kw">case</span> T -> abort FueraDeRango(i)
+  <span class="kw">report</span> seq[i]
+<span class="kw">end</span>
+
+<span class="kw">check</span> <span class="kw">begin</span>
+  out(obtener_seguro([1,2,3], 10))
+<span class="kw">end</span>
+<span class="kw">catch</span> FueraDeRango <span class="kw">as</span> e <span class="kw">begin</span>
+  out(s<span class="str">"índice {e'indice} fuera de rango"</span>)
+<span class="kw">end</span></code></pre>
+  <p><code>verify &lt;expresión&gt;</code> aborta si la expresión es falsa — útil como aserción.</p>
+</section>
+
+<section id="gramatica">
+  <h2><span class="num">11</span>Especificación formal (EBNF)</h2>
+  <div class="grammar">
+<div class="rule"><span class="nt">program</span>        ::= statement*</div>
+<div class="rule"><span class="nt">statement</span>      ::= var_decl | if_stmt | func_def | each_stmt | repeat_stmt</div>
+<div class="rule">                 | match_stmt | check_stmt | abort_stmt | struct_def</div>
+<div class="rule">                 | "report" expr | "stop" | "next" | "skip" | "drop" IDENT</div>
+<div class="rule">                 | "verify" expr | assign_stmt | expr_stmt</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">var_decl</span>       ::= "let" IDENT [ (":" type | "::" type) ] [ ":=" expr ]</div>
+<div class="rule"><span class="nt">if_stmt</span>        ::= "let" expr block ("given" expr block)* ["otherwise" block]</div>
+<div class="rule"><span class="nt">block</span>          ::= "begin" statement* "end"</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">func_def</span>       ::= "where" IDENT "(" params ")" [":" type] block</div>
+<div class="rule"><span class="nt">params</span>         ::= [ param ("," param)* ]</div>
+<div class="rule"><span class="nt">param</span>          ::= ["..."] IDENT [":" type] [":=" expr]</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">each_stmt</span>      ::= "each" IDENT "in" expr block</div>
+<div class="rule"><span class="nt">repeat_stmt</span>    ::= "repeat" block "until" expr</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">match_stmt</span>     ::= "given" expr ":" case_arm* [ "otherwise" "->" arm_body ]</div>
+<div class="rule"><span class="nt">case_arm</span>       ::= "case" expr "->" arm_body</div>
+<div class="rule"><span class="nt">arm_body</span>       ::= block | statement</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">check_stmt</span>     ::= "check" block catch_clause* ["resolve" block] ["always" block]</div>
+<div class="rule"><span class="nt">catch_clause</span>   ::= "catch" [IDENT] ["as" IDENT] block</div>
+<div class="rule"><span class="nt">abort_stmt</span>     ::= "abort" expr ["cause" expr]</div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">struct_def</span>     ::= "structure" IDENT ["(" "immutable" ")"] ["extends" IDENT]</div>
+<div class="rule">                 ":=" struct_member* "end"</div>
+<div class="rule"><span class="nt">struct_member</span>  ::= ["static"] ["fixed"|"immutable"] "property" field_decl</div>
+<div class="rule">                 | field_decl | func_def | "create" "(" params ")" block</div>
+<div class="rule"><span class="nt">field_decl</span>     ::= field_name [":" type] [":=" expr]</div>
+<div class="rule"><span class="nt">field_name</span>     ::= IDENT | KEYWORD   <span class="lit">-- permite nombres como 'next'</span></div>
+<div class="rule"></div>
+<div class="rule"><span class="nt">expr</span>           ::= ternary</div>
+<div class="rule"><span class="nt">ternary</span>        ::= or_expr ["?" or_expr ":" ternary]</div>
+<div class="rule"><span class="nt">or_expr</span>        ::= and_expr ("||" and_expr)*</div>
+<div class="rule"><span class="nt">and_expr</span>       ::= not_expr ("&&" not_expr)*</div>
+<div class="rule"><span class="nt">not_expr</span>       ::= "!!" not_expr | comparison</div>
+<div class="rule"><span class="nt">comparison</span>     ::= set_expr (("===" |"=!="|"&lt;"|"&gt;"|"&lt;="|"&gt;=") set_expr)*</div>
+<div class="rule"><span class="nt">set_expr</span>       ::= additive (("union"|"intersect"|"exclude"|"cart") additive)*</div>
+<div class="rule"><span class="nt">additive</span>       ::= multiplicative (("+"|"-") multiplicative)*</div>
+<div class="rule"><span class="nt">multiplicative</span> ::= power (("*"|"/"|"//"|"%") power)*</div>
+<div class="rule"><span class="nt">power</span>          ::= unary ["**" power]</div>
+<div class="rule"><span class="nt">unary</span>          ::= "-" unary | "#" postfix | postfix</div>
+<div class="rule"><span class="nt">postfix</span>        ::= primary ( call | projection | index | slice )*</div>
+<div class="rule"><span class="nt">call</span>           ::= "(" [expr ("," expr)*] ")"</div>
+<div class="rule"><span class="nt">projection</span>     ::= "'" field_name</div>
+<div class="rule"><span class="nt">index</span>          ::= "[" expr "]"</div>
+<div class="rule"><span class="nt">slice</span>          ::= "[" expr ".." expr ["by" expr] "]"</div>
+<div class="rule"><span class="nt">primary</span>        ::= literal | IDENT | "(" expr ")" | list | set_or_map</div>
+<div class="rule">                 | range | lambda | "fn" ...</div>
+<div class="rule"><span class="nt">lambda</span>         ::= "fn" "(" params ")" "=>" expr</div>
+<div class="rule"><span class="nt">list</span>           ::= "[" [expr ("," expr)* | expr "|" comp_clauses] "]"</div>
+<div class="rule"><span class="nt">set_or_map</span>     ::= "{" ( expr ".." expr                              <span class="lit">-- rango</span></div>
+<div class="rule">                      | expr ":" expr ("," expr ":" expr)*         <span class="lit">-- mapping</span></div>
+<div class="rule">                      | expr ("," expr)* | expr "|" comp_clauses) "}"</div>
+<div class="rule"><span class="nt">comp_clauses</span>   ::= IDENT "in" expr ("," expr)*   <span class="lit">-- condiciones adicionales</span></div>
+  </div>
+</section>
+
+<section id="builtins">
+  <h2><span class="num">12</span>Funciones integradas</h2>
+  <table>
+    <tr><th>Función</th><th>Descripción</th></tr>
+    <tr><td><code>out(...)</code></td><td>imprime valores en salida estándar</td></tr>
+    <tr><td><code>type(x)</code></td><td>nombre del tipo en tiempo de ejecución</td></tr>
+    <tr><td><code>is_null(x)</code></td><td>comprobación segura de referencia nula</td></tr>
+    <tr><td><code>contains(c, x)</code></td><td>prueba de pertenencia en Sequence / Set / Mapping</td></tr>
+    <tr><td><code>#x</code></td><td>longitud de una colección o cadena</td></tr>
+    <tr><td><code>sup(seq)</code> / <code>inf(seq)</code></td><td>máximo / mínimo</td></tr>
+    <tr><td><code>sort(seq)</code> / <code>reverse(seq)</code></td><td>orden ascendente / inversión</td></tr>
+    <tr><td><code>round(x, n)</code></td><td>redondeo a <code>n</code> decimales</td></tr>
+    <tr><td><code>apply(fn, seq)</code></td><td>mapea <code>fn</code> sobre cada elemento</td></tr>
+    <tr><td><code>select(fn, seq)</code></td><td>filtra por predicado</td></tr>
+    <tr><td><code>fold(fn, acc, seq)</code></td><td>reducción izquierda</td></tr>
+    <tr><td><code>exists(seq, fn)</code> / <code>forall(seq, fn)</code></td><td>cuantificadores existencial / universal</td></tr>
+    <tr><td><code>sum(fn, a, b)</code> / <code>prod(fn, a, b)</code></td><td>sumatoria / productoria</td></tr>
+    <tr><td><code>deriv(fn, x)</code> / <code>integ(fn, a, b)</code></td><td>derivada e integral numéricas</td></tr>
+  </table>
+</section>
+
+<footer>Axioma — lenguaje de programación matemático. Motor de referencia en Python (CLI) y JavaScript (IDE en el navegador).</footer>
+</div>
+<script>
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const root = document.documentElement;
+  if (root.getAttribute("data-theme") === "dark") root.setAttribute("data-theme", "light");
+  else root.setAttribute("data-theme", "dark");
+});
+</script>
+</body>
+</html>
