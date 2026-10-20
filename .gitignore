@@ -43,5 +43,8 @@ Thumbs.db
 *.tmp
 *.bak
 
+# Byte Cat save file
+Lua Sandbox/bytecat_save.txt
+
 # Agent/tool metadata (not project code)
 /.freebuff/
