@@ -1,7 +1,6 @@
 #!/usr/bin/env lua
 -- byte_cat.lua
 -- Byte Cat: a very small terminal companion.
---
 -- Feed him, play with him, brush him, let him sleep. He will do the rest.
 -- Run with: lua byte_cat.lua
 
@@ -17,9 +16,7 @@ local SAVE_PATH = script_dir .. "bytecat_save.txt"
 
 local state
 
--- ---------------------------------------------------------------------------
 -- Small helpers
--- ---------------------------------------------------------------------------
 
 local function clamp(value, low, high)
     if value < low then return low end
@@ -58,9 +55,7 @@ local function plural(count, singular, plural_form)
     return plural_form
 end
 
--- ---------------------------------------------------------------------------
 -- The cat
--- ---------------------------------------------------------------------------
 
 local function new_state()
     return {
@@ -173,9 +168,7 @@ local function draw_screen()
     print("  [5] Sleep  [6] Check  [7] Help  [8] Quit")
 end
 
--- ---------------------------------------------------------------------------
 -- Health and time
--- ---------------------------------------------------------------------------
 
 local function update_health()
     if state.fullness <= 15 or state.cleanliness <= 15 then
@@ -212,9 +205,7 @@ local function pass_time(hours, sleeping)
     update_health()
 end
 
--- ---------------------------------------------------------------------------
 -- Little things that happen on their own
--- ---------------------------------------------------------------------------
 
 local EVENTS = {
     {
@@ -269,9 +260,8 @@ local function maybe_event()
     end
 end
 
--- ---------------------------------------------------------------------------
+
 -- Actions
--- ---------------------------------------------------------------------------
 
 local FOODS = {
     {
@@ -483,9 +473,8 @@ local ACTIONS = {
     ["help"] = help,
 }
 
--- ---------------------------------------------------------------------------
 -- Saving
--- ---------------------------------------------------------------------------
+
 
 local SAVE_FIELDS = {
     "name", "fullness", "energy", "cleanliness", "happiness", "health",
