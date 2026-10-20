@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/Moth%20Laboratory.png" alt="Moth Laboratory logo" width="420">
+  <img src="images/Moth%20Laboratory.png" alt="Moth Laboratory logo" width="650">
 </p>
 
 <h1 align="center">Moth Laboratory</h1>
