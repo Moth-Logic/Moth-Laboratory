@@ -79,7 +79,7 @@ local function timed_input(prompt, seconds)
             "[Console]::Write(([string][char]8)+' '+([string][char]8))}}",
             "elseif(-not [char]::IsControl($k.KeyChar)){$s+=$k.KeyChar;[Console]::Write($k.KeyChar)}",
             "};Start-Sleep -Milliseconds 30};",
-            "[IO.File]::WriteAllText('" .. INPUT_PATH .. "',$s);exit $code",
+            "[IO.File]::WriteAllText('" .. (INPUT_PATH:gsub("'", "''")) .. "',$s);exit $code",
         })
         _, _, code = os.execute('powershell -NoProfile -Command "' .. script .. '"')
     else
