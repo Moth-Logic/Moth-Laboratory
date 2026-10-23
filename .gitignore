@@ -20,6 +20,7 @@ dist/
 *.exe
 *.o
 *.obj
+*.class
 
 # Local secrets and environment configuration
 .env
@@ -43,8 +44,8 @@ Thumbs.db
 *.tmp
 *.bak
 
-# Byte Cat save file
-Lua Sandbox/bytecat_save.txt
+# Byte Cat save file (written next to the script)
+Lua Sandbox/Byte/bytecat_save.txt
 
 # Agent/tool metadata (not project code)
 /.freebuff/
